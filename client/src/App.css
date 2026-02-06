@@ -1,0 +1,19 @@
+/* Basic app styles used by placeholder pages */
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+main {
+  flex: 1;
+  padding: 24px;
+}
+h1, h2 {
+  color: #003366;
+}
+.page-card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
