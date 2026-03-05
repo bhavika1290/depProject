@@ -1,0 +1,40 @@
+{
+  "name": "iit-ropar-admissions-portal",
+  "version": "1.0.0",
+  "description": "PhD Admissions Portal for IIT Ropar",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon server.js",
+    "client": "npm start --prefix client",
+    "install-all": "npm install && cd client && npm install"
+  },
+  "keywords": [
+    "admissions",
+    "phd",
+    "iit-ropar"
+  ],
+  "author": "IIT Ropar",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "joi": "^17.10.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.1.0",
+    "mongoose": "^7.8.9",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.5",
+    "pdfkit": "^0.13.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.1",
+    "nodemon": "^3.0.1"
+  },
+  "type": "commonjs"
+}

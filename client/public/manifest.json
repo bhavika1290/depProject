@@ -1,0 +1,8 @@
+{
+  "short_name": "IIT Ropar",
+  "name": "IIT Ropar Admissions Portal",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#003366",
+  "background_color": "#ffffff"
+}
