@@ -4,9 +4,15 @@
   "description": "PhD Admissions Portal for IIT Ropar",
   "main": "server.js",
   "scripts": {
+<<<<<<< HEAD
     "start": "nodemon server.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server.js",
+=======
+    "start": "nodemon server/server.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon server/server.js",
+>>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
     "client": "npm start --prefix client",
     "install-all": "npm install && cd client && npm install"
   },
@@ -25,7 +31,10 @@
     "express": "^4.22.1",
     "joi": "^17.10.1",
     "jsonwebtoken": "^9.0.3",
+<<<<<<< HEAD
     "mongodb": "^7.1.0",
+=======
+>>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
     "mongoose": "^7.8.9",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.5",
@@ -37,4 +46,8 @@
     "nodemon": "^3.0.1"
   },
   "type": "commonjs"
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9

@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+=======
+import React, { useState, useContext } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
+>>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
 import api from '../../utils/api';
 
 export default function VerifyOTP() {
@@ -8,9 +14,18 @@ export default function VerifyOTP() {
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
+<<<<<<< HEAD
   const location = useLocation();
   const email = location.state?.email || '';
 
+=======
+  const navigate = useNavigate();
+  const location = useLocation();
+  const email = location.state?.email || '';
+
+  const { login } = useContext(AuthContext); // Re-use login mechanism to set token
+
+>>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
