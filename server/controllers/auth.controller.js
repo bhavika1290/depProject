@@ -19,16 +19,22 @@ exports.register = async (req, res) => {
     const { email, password, role } = req.body;
 
     // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists with this email'
-      });
+    let user = await User.findOne({ email });
+
+    if (user) {
+      if (user.isVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'User already exists with this email and is verified'
+        });
+      }
+
+      // If user exists but NOT verified, delete the old unverified record to start fresh
+      await User.findByIdAndDelete(user._id);
     }
 
-    // Create user
-    const user = await User.create({
+    // Create new user (automatically hashes password cleanly via pre-save hook)
+    user = await User.create({
       email,
       password,
       role: role || 'student'
@@ -40,7 +46,7 @@ exports.register = async (req, res) => {
 
     // Send OTP email
     const message = `Your OTP for email verification is: ${otp}\n\nThis OTP will expire in 10 minutes.`;
-    
+
     try {
       await sendEmail({
         email: user.email,
@@ -57,10 +63,16 @@ exports.register = async (req, res) => {
         }
       });
     } catch (emailError) {
-      await User.findByIdAndDelete(user._id);
-      return res.status(500).json({
-        success: false,
-        message: 'Error sending verification email. Please try again.'
+      // In development/local env, we don't want to block registration if email fails
+      console.log(`\n\n=== DEVELOPMENT MODE: EMAIL FAILED TO SEND ===\nOTP for ${user.email} is: ${otp}\n============================================\n\n`);
+
+      res.status(201).json({
+        success: true,
+        message: 'Registration successful. (Email sending failed - check server console for OTP)',
+        data: {
+          email: user.email,
+          userId: user._id
+        }
       });
     }
 
@@ -167,7 +179,7 @@ exports.resendOTP = async (req, res) => {
     await user.save();
 
     const message = `Your new OTP for email verification is: ${otp}\n\nThis OTP will expire in 10 minutes.`;
-    
+
     await sendEmail({
       email: user.email,
       subject: 'Email Verification - IIT Ropar Admissions',

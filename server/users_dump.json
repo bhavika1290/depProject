@@ -1,0 +1,26 @@
+[
+  {
+    "_id": "69a90b89805abec9324f741a",
+    "email": "2023mcb1290@iitrpr.ac.in",
+    "password": "$2a$10$9sooItOBFpz44JRI8IpLse6rQDa8SdyIPDRAzlBlmpjIjcNVVMMVa",
+    "role": "student",
+    "isVerified": true,
+    "departments": [],
+    "profileCompleted": false,
+    "createdAt": "2026-03-05T04:50:17.463Z",
+    "updatedAt": "2026-03-05T04:51:21.878Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a90d12cf869229ebc34389",
+    "email": "bhavika23sharma14@gmail.com",
+    "password": "$2a$10$W5wHIMRk70x2tAuvMGUwyO4HOfhUBSAjr.vP8fLSJ0iD/kgknCVaS",
+    "role": "student",
+    "isVerified": true,
+    "departments": [],
+    "profileCompleted": false,
+    "createdAt": "2026-03-05T04:56:50.464Z",
+    "updatedAt": "2026-03-05T04:57:04.008Z",
+    "__v": 0
+  }
+]
