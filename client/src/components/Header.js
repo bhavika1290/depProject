@@ -21,15 +21,20 @@ export default function Header() {
         <img
           src="https://www.uxdt.nic.in/wp-content/uploads/2024/06/iit-ropar-01.jpg"
           alt="IIT Ropar official logo"
-          style={{ width: '44px', height: '44px', objectFit: 'contain' }}
+          style={{ width: '64px', height: '64px', objectFit: 'contain' }}
         />
         <Link to="/" style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary-color)', letterSpacing: '-0.02em', textDecoration: 'none' }}>
           IIT Ropar Maths Dept
         </Link>
       </div>
 
-      <nav style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+      <nav style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
         <Link to="/" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Home</Link>
+        <Link to="/how-to-apply" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>How to Apply</Link>
+        <Link to="/openings" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Openings</Link>
+        <Link to="/more-info" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>More Info</Link>
+        <Link to="/faqs" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>FAQs</Link>
+        <Link to="/contact" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Contact</Link>
 
         {user ? (
           <>

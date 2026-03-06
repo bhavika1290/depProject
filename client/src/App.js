@@ -10,6 +10,11 @@ import Home from './pages/Public/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import VerifyOTP from './pages/Auth/VerifyOTP';
+import FAQs from './pages/Public/FAQs';
+import HowToApply from './pages/Public/HowToApply';
+import MoreInfo from './pages/Public/MoreInfo';
+import Openings from './pages/Public/Openings';
+import Contact from './pages/Public/Contact';
 
 // Student Pages
 import StudentDashboard from './pages/Student/Dashboard';
@@ -31,9 +36,14 @@ export default function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
+           <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-otp" element={<VerifyOTP />} />
+            <Route path="/faqs" element={<FAQs />} />
+            <Route path="/how-to-apply" element={<HowToApply />} />
+            <Route path="/more-info" element={<MoreInfo />} />
+            <Route path="/openings" element={<Openings />} />
+            <Route path="/contact" element={<Contact />} />
 
             {/* Student Routes */}
             <Route path="/student" element={
