@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from 'react';
-=======
-import React, { useState, useEffect } from 'react';
->>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 
@@ -22,15 +18,7 @@ export default function ApplicationForm() {
     });
     const [transactionSlip, setTransactionSlip] = useState(null);
 
-<<<<<<< HEAD
     const fetchOffering = useCallback(async () => {
-=======
-    useEffect(() => {
-        fetchOffering();
-    }, [id]);
-
-    const fetchOffering = async () => {
->>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
         try {
             const res = await api.get(`/offerings/${id}`);
             setOffering(res.data.data);
@@ -39,15 +27,11 @@ export default function ApplicationForm() {
         } finally {
             setLoading(false);
         }
-<<<<<<< HEAD
     }, [id]);
 
     useEffect(() => {
         fetchOffering();
     }, [fetchOffering]);
-=======
-    };
->>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
 
     const handlePaymentChange = (e) => {
         setPayment({ ...payment, [e.target.name]: e.target.value });

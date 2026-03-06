@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from 'react';
-=======
-import React, { useState, useEffect } from 'react';
->>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 
@@ -28,34 +24,18 @@ export default function Profile() {
     }
   });
 
-<<<<<<< HEAD
   const fetchProfile = useCallback(async () => {
-=======
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
->>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
     try {
       const res = await api.get('/users/profile');
       if (res.data.data) {
         const pInfo = res.data.data.personalInfo || {};
         if (pInfo.dateOfBirth) pInfo.dateOfBirth = pInfo.dateOfBirth.substring(0, 10);
 
-<<<<<<< HEAD
         setFormData((prev) => ({
           personalInfo: { ...prev.personalInfo, ...pInfo },
           communicationDetails: { ...prev.communicationDetails, ...(res.data.data.communicationDetails || {}) },
           educationalDetails: { ...prev.educationalDetails, ...(res.data.data.educationalDetails || {}) }
         }));
-=======
-        setFormData({
-          personalInfo: { ...formData.personalInfo, ...pInfo },
-          communicationDetails: { ...formData.communicationDetails, ...(res.data.data.communicationDetails || {}) },
-          educationalDetails: { ...formData.educationalDetails, ...(res.data.data.educationalDetails || {}) }
-        });
->>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
       }
     } catch (error) {
       if (error.response && error.response.status !== 404) {
@@ -64,15 +44,11 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
-<<<<<<< HEAD
   }, []);
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
-=======
-  };
->>>>>>> 0e70fe0c9339ff6d34303b93472382c209daf5e9
 
   const handlePersonalChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;

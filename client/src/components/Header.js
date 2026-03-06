@@ -18,14 +18,11 @@ export default function Header() {
       zIndex: 1000
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        {/* Placeholder Logo */}
-        <div style={{
-          width: '40px', height: '40px',
-          backgroundColor: 'var(--primary-color)',
-          borderRadius: '50%',
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          color: 'white', fontWeight: 'bold'
-        }}>IIT</div>
+        <img
+          src="https://www.uxdt.nic.in/wp-content/uploads/2024/06/iit-ropar-01.jpg"
+          alt="IIT Ropar official logo"
+          style={{ width: '44px', height: '44px', objectFit: 'contain' }}
+        />
         <Link to="/" style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary-color)', letterSpacing: '-0.02em', textDecoration: 'none' }}>
           IIT Ropar Maths Dept
         </Link>
