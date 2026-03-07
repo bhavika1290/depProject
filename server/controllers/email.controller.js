@@ -76,7 +76,7 @@ exports.deleteExcelFile = async (req, res, next) => {
             fs.unlinkSync(file.filePath);
         }
 
-        await file.remove();
+        await file.deleteOne();
 
         res.status(200).json({
             success: true,

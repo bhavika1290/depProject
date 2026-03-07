@@ -8,7 +8,14 @@ const Offering = require('../models/Offering.model');
 exports.getDashboardStats = async (req, res, next) => {
     try {
         const totalApplications = await Application.countDocuments();
-        const totalOfferings = await Offering.countDocuments();
+
+        // Get active cycle
+        const activeCycle = await AdmissionCycle.findOne({ isActive: true });
+
+        // Count offerings only for the active cycle if it exists, otherwise count all
+        const offeringQuery = activeCycle ? { admissionCycleId: activeCycle._id } : {};
+        const totalOfferings = await Offering.countDocuments(offeringQuery);
+
         const totalCycles = await AdmissionCycle.countDocuments();
 
         // Get recent applications
@@ -24,13 +31,15 @@ exports.getDashboardStats = async (req, res, next) => {
                 totalApplications,
                 totalOfferings,
                 totalCycles,
-                recentApplications
+                recentApplications,
+                activeCycle: activeCycle || null
             }
         });
     } catch (error) {
         next(error);
     }
 };
+
 
 // @desc    Get category-wise applications count
 // @route   GET /api/dashboard/category-wise

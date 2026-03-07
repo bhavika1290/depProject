@@ -104,7 +104,7 @@ exports.deleteTemplate = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Cannot delete DEFAULT templates' });
         }
 
-        await template.remove();
+        await template.deleteOne();
 
         res.status(200).json({
             success: true,
