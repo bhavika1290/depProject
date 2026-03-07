@@ -1,51 +1,58 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css';
+import campusHero from '../../assets/images/ropar-iit (1).png';
 
 export default function Home() {
   return (
     <div className="home-container fade-in">
-      <section className="hero-section">
-        <div className="hero-content">
-          <h1 className="hero-title">IIT Ropar Maths Dept</h1>
-          <p className="hero-subtitle">
-            Pushing the boundaries of mathematical research and education.
-            Join our vibrant academic community and shape the future of science.
-          </p>
-          <div className="hero-cta">
-            <Link to="/register" className="btn-hero-primary">Apply Now</Link>
-            <Link to="/login" className="btn-hero-secondary">Check Status</Link>
+      <section className="hero-section math-hero">
+        <div className="hero-columns">
+          <div className="hero-left">
+            <p className="hero-eyebrow">Department of Mathematics</p>
+            <h1 className="hero-title">PhD Admissions Portal</h1>
+            <p className="hero-subtitle">
+              A bespoke application experience for IIT Ropar's Mathematics Department. Complete registration,
+              verify documents, and track your shortlisting within a single modern portal.
+            </p>
+            <div className="hero-cta single-line">
+              <Link to="/login" className="btn-hero-secondary">Login</Link>
+              <Link to="/register" className="btn-hero-primary">Sign Up</Link>
+            </div>
+          </div>
+          <div className="hero-right">
+            <div className="hero-image-wrapper">
+              <img src={campusHero} alt="IIT Ropar campus" className="hero-campus" />
+              <span className="hero-caption">IIT Ropar</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="features-grid">
-        <div className="feature-card">
-          <div className="feature-icon">∑</div>
-          <h3>Advanced Research</h3>
-          <p>Cutting-edge research in Pure & Applied Mathematics, including Fluid Dynamics, Analysis, and Algebra.</p>
-        </div>
-
-        <div className="feature-card">
-          <div className="feature-icon">∫</div>
-          <h3>World-Class Faculty</h3>
-          <p>Learn from distinguished professors and researchers with extensive international experience and expertise.</p>
-        </div>
-
-        <div className="feature-card">
-          <div className="feature-icon">λ</div>
-          <h3>Interdisciplinary Focus</h3>
-          <p>Collaboration with multiple engineering and science departments for real-world mathematical applications.</p>
-        </div>
+      <section className="info-intro">
+        <p>
+          Explore the How to Apply guide, current Openings, FAQs, and Contact page via the navigation bar above.
+          Everything you need for the IIT Ropar Mathematics PhD journey lives inside this portal.
+        </p>
       </section>
 
-      <div style={{ marginTop: '60px', textAlign: 'center' }}>
-        <h2 style={{ marginBottom: '20px' }}>Join Our PhD Program</h2>
-        <p style={{ maxWidth: '700px', margin: '0 auto 30px' }}>
-          We offer a dynamic research environment, state-of-the-art facilities,
-          and competitive fellowships for motivated students.
-        </p>
-      </div>
+      <section className="campus-photo-section">
+        <div className="campus-photo-card">
+          <img src={campusHero} alt="IIT Ropar campus" className="campus-photo" />
+          <span className="campus-photo-label">IIT Ropar entrance pillars</span>
+        </div>
+        <div className="campus-photo-text">
+          <h2>Gateway to a modern civilizational legacy</h2>
+          <p>
+            The four 41-foot stone pillars carved with Indus Valley motifs are crowned by floating molecular forms,
+            symbolizing how IIT Ropar builds modern science on a timeless heritage.
+          </p>
+          <p>
+            Use this view as a reminder of the institute’s architectural statement while you track your PhD application
+            milestones on this portal.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }

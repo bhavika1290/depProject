@@ -1,10 +1,10 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
-import api from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/apiCore';
 
 export default function Dashboard() {
-  const { user } = useContext(AuthContext);
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     submittedCount: 0,
@@ -16,14 +16,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.role === 'admin' || user?.role === 'superadmin') {
+    if (currentUser?.role === 'admin' || currentUser?.role === 'superadmin') {
       navigate('/admin');
-    } else if (user?.role === 'faculty') {
+    } else if (currentUser?.role === 'faculty') {
       navigate('/faculty');
     } else {
       fetchDashboardData();
     }
-  }, [user, navigate]);
+  }, [currentUser, navigate]);
 
   const fetchDashboardData = async () => {
     try {
@@ -46,7 +46,7 @@ export default function Dashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div>
           <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Student Dashboard</h2>
-          <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Welcome back, <strong>{user?.name || user?.email}</strong>!</p>
+          <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Welcome back, <strong>{currentUser?.name || currentUser?.email}</strong>!</p>
         </div>
       </div>
 

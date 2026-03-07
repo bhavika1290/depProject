@@ -1,0 +1,134 @@
+.login-shell {
+  min-height: calc(100vh - 220px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 0;
+}
+
+.login-card {
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 20px 34px rgba(17, 24, 39, 0.14);
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.login-brand-panel {
+  background: linear-gradient(160deg, #102b72 0%, #1e3a8a 52%, #2c5acc 100%);
+  color: #ffffff;
+  padding: 36px 30px;
+}
+
+.login-kicker {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.login-brand-panel h2 {
+  margin-top: 16px;
+  margin-bottom: 12px;
+  color: #ffffff;
+  font-size: 2rem;
+}
+
+.login-brand-panel p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 22px;
+}
+
+.login-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.login-points li {
+  position: relative;
+  padding-left: 22px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+}
+
+.login-points li::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #fbbf24;
+  position: absolute;
+  left: 0;
+  top: 8px;
+}
+
+.login-form-panel {
+  padding: 34px 30px;
+}
+
+.login-form-panel h3 {
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+.login-form-subtitle {
+  margin-bottom: 24px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.login-error {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  padding: 11px 12px;
+  border-radius: var(--border-radius);
+  margin-bottom: 18px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.login-password-group {
+  margin-bottom: 24px;
+}
+
+.login-submit-btn {
+  width: 100%;
+  padding: 13px;
+  font-size: 1.02rem;
+}
+
+.login-footer-link {
+  margin-top: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.login-footer-link a {
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .login-card {
+    grid-template-columns: 1fr;
+  }
+
+  .login-brand-panel,
+  .login-form-panel {
+    padding: 26px 20px;
+  }
+
+  .login-brand-panel h2 {
+    font-size: 1.7rem;
+  }
+}

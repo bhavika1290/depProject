@@ -7,16 +7,6 @@ const path = require('path');
 // Load environment variables
 dotenv.config();
 
-// Import routes
-const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
-const admissionCycleRoutes = require('./routes/admissionCycle.routes');
-const offeringRoutes = require('./routes/offering.routes');
-const applicationRoutes = require('./routes/application.routes');
-const templateRoutes = require('./routes/template.routes');
-const emailRoutes = require('./routes/email.routes');
-const dashboardRoutes = require('./routes/dashboard.routes');
-
 // Initialize express app
 const app = express();
 
@@ -31,19 +21,21 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// API Routes
+// Import API Routes from Feature Modules
+const authRoutes = require('./modules/auth/auth.routes');
+const adminRoutes = require('./modules/admin/admin.routes');
+const facultyRoutes = require('./modules/faculty/faculty.routes');
+const studentRoutes = require('./modules/student/student.routes');
+
+// API Routes mounting
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/admission-cycles', admissionCycleRoutes);
-app.use('/api/offerings', offeringRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/templates', templateRoutes);
-app.use('/api/emails', emailRoutes);
-app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/faculty', facultyRoutes);
+app.use('/api/student', studentRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+  res.json({ status: 'OK', message: 'Server is running with Modular Architecture' });
 });
 
 // Error handling middleware
@@ -68,7 +60,7 @@ mongoose.connect(process.env.MONGODB_URI, {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🌍 Modular Architecture Active`);
   });
 })
 .catch((err) => {

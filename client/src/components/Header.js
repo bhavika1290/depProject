@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
-  const { user, logout } = useContext(AuthContext);
+  const { currentUser, logoutContext } = useAuth();
 
   return (
     <header style={{
@@ -18,28 +18,30 @@ export default function Header() {
       zIndex: 1000
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        {/* Placeholder Logo */}
-        <div style={{
-          width: '40px', height: '40px',
-          backgroundColor: 'var(--primary-color)',
-          borderRadius: '50%',
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          color: 'white', fontWeight: 'bold'
-        }}>IIT</div>
+        <img
+          src="https://www.uxdt.nic.in/wp-content/uploads/2024/06/iit-ropar-01.jpg"
+          alt="IIT Ropar official logo"
+          style={{ width: '64px', height: '64px', objectFit: 'contain' }}
+        />
         <Link to="/" style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary-color)', letterSpacing: '-0.02em', textDecoration: 'none' }}>
           IIT Ropar Maths Dept
         </Link>
       </div>
 
-      <nav style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+      <nav style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
         <Link to="/" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Home</Link>
+        <Link to="/how-to-apply" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>How to Apply</Link>
+        <Link to="/openings" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Openings</Link>
+        <Link to="/more-info" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>More Info</Link>
+        <Link to="/faqs" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>FAQs</Link>
+        <Link to="/contact" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Contact</Link>
 
-        {user ? (
+        {currentUser ? (
           <>
-            <Link to={user.role === 'student' ? '/student' : user.role === 'faculty' ? '/faculty' : '/admin'} style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+            <Link to={currentUser.role === 'student' ? '/student' : currentUser.role === 'faculty' ? '/faculty' : '/admin'} style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
               Dashboard
             </Link>
-            <button onClick={logout} style={{
+            <button onClick={logoutContext} style={{
               background: 'transparent', border: '1px solid var(--primary-color)',
               color: 'var(--primary-color)', padding: '8px 16px', borderRadius: '4px',
               cursor: 'pointer', fontWeight: 500, transition: 'all 0.2s'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 
@@ -18,11 +18,7 @@ export default function ApplicationForm() {
     });
     const [transactionSlip, setTransactionSlip] = useState(null);
 
-    useEffect(() => {
-        fetchOffering();
-    }, [id]);
-
-    const fetchOffering = async () => {
+    const fetchOffering = useCallback(async () => {
         try {
             const res = await api.get(`/offerings/${id}`);
             setOffering(res.data.data);
@@ -31,7 +27,11 @@ export default function ApplicationForm() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchOffering();
+    }, [fetchOffering]);
 
     const handlePaymentChange = (e) => {
         setPayment({ ...payment, [e.target.name]: e.target.value });

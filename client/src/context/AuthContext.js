@@ -1,51 +1,66 @@
-import React, { createContext, useState, useEffect } from 'react';
-import api from '../utils/api';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
-export const AuthContext = createContext({});
+const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
+
+export const AuthProvider = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const res = await api.get('/auth/me');
-          setUser(res.data.data);
-        } catch (error) {
-          console.error('Failed to fetch user', error);
+    // Check local storage for token on initial load
+    const token = localStorage.getItem('token');
+    
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        // Check expiry
+        if (decoded.exp * 1000 < Date.now()) {
           localStorage.removeItem('token');
+          setCurrentUser(null);
+        } else {
+          // You could also fetch full user profile here via API if needed
+          setCurrentUser({
+            id: decoded.id,
+            role: decoded.role,
+            // name and email might require a quick lookup or be stored in localStorage
+            ...JSON.parse(localStorage.getItem('user_details') || '{}')
+          });
         }
+      } catch (err) {
+        localStorage.removeItem('token');
       }
-      setLoading(false);
-    };
-
-    fetchUser();
+    }
+    
+    setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    const userRes = await api.get('/auth/me');
-    setUser(userRes.data.data);
+  const loginContext = (token, userData) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user_details', JSON.stringify(userData));
+    setCurrentUser(userData);
   };
 
-  const register = async (userData) => {
-    // The register endpoint does NOT return a token, it requires OTP first.
-    // Just await the completion so components know it succeeded.
-    await api.post('/auth/register', userData);
-  };
-
-  const logout = () => {
+  const logoutContext = () => {
     localStorage.removeItem('token');
-    setUser(null);
+    localStorage.removeItem('user_details');
+    setCurrentUser(null);
+  };
+
+  const value = {
+    currentUser,
+    loginContext,
+    logoutContext,
+    isAuthenticated: !!currentUser,
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, loading }}>
+    <AuthContext.Provider value={value}>
       {!loading && children}
     </AuthContext.Provider>
   );
-}
+};

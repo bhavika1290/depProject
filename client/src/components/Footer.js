@@ -19,8 +19,8 @@ export default function Footer() {
           &copy; {new Date().getFullYear()} IIT Ropar Admissions. All rights reserved.
         </div>
         <div style={{ display: 'flex', gap: '15px' }}>
-          <a href="#" style={{ color: '#9ca3af' }}>Help Desk</a>
-          <a href="#" style={{ color: '#9ca3af' }}>Contact Us</a>
+          <a href="mailto:coapcell@iitrpr.ac.in" style={{ color: '#9ca3af' }}>Help Desk</a>
+          <a href="https://www.iitrpr.ac.in/contact-us" target="_blank" rel="noreferrer" style={{ color: '#9ca3af' }}>Contact Us</a>
         </div>
       </div>
     </footer>

@@ -7,9 +7,14 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Public Pages
 import Home from './pages/Public/Home';
-import Login from './pages/Auth/Login';
-import Register from './pages/Auth/Register';
-import VerifyOTP from './pages/Auth/VerifyOTP';
+// Auth Module Pages
+import Login from './modules/auth/pages/Login';
+import Register from './modules/auth/pages/Register';
+import FAQs from './pages/Public/FAQs';
+import HowToApply from './pages/Public/HowToApply';
+import MoreInfo from './pages/Public/MoreInfo';
+import Openings from './pages/Public/Openings';
+import Contact from './pages/Public/Contact';
 
 // Student Pages
 import StudentDashboard from './pages/Student/Dashboard';
@@ -20,7 +25,8 @@ import ApplicationForm from './pages/Student/ApplicationForm';
 // Admin Pages
 import AdminDashboard from './pages/Admin/AdminDashboard';
 // Faculty Pages
-import FacultyDashboard from './pages/Faculty/FacultyDashboard';
+import FacultyLayout from './modules/faculty/components/FacultyLayout';
+import FacultyDashboard from './modules/faculty/pages/FacultyDashboard';
 
 export default function App() {
   return (
@@ -31,9 +37,13 @@ export default function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
+           <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/verify-otp" element={<VerifyOTP />} />
+            <Route path="/faqs" element={<FAQs />} />
+            <Route path="/how-to-apply" element={<HowToApply />} />
+            <Route path="/more-info" element={<MoreInfo />} />
+            <Route path="/openings" element={<Openings />} />
+            <Route path="/contact" element={<Contact />} />
 
             {/* Student Routes */}
             <Route path="/student" element={
@@ -67,9 +77,12 @@ export default function App() {
             {/* Faculty Routes */}
             <Route path="/faculty" element={
               <ProtectedRoute allowedRoles={['faculty', 'admin', 'superadmin']}>
-                <FacultyDashboard />
+                <FacultyLayout />
               </ProtectedRoute>
-            } />
+            }>
+               <Route index element={<FacultyDashboard />} />
+               {/* Add remaining Faculty Module sub-routes here later */}
+            </Route>
 
             {/* Fallback */}
             <Route path="*" element={<div>Page Not Found</div>} />

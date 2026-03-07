@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 
@@ -24,22 +24,18 @@ export default function Profile() {
     }
   });
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const res = await api.get('/users/profile');
       if (res.data.data) {
         const pInfo = res.data.data.personalInfo || {};
         if (pInfo.dateOfBirth) pInfo.dateOfBirth = pInfo.dateOfBirth.substring(0, 10);
 
-        setFormData({
-          personalInfo: { ...formData.personalInfo, ...pInfo },
-          communicationDetails: { ...formData.communicationDetails, ...(res.data.data.communicationDetails || {}) },
-          educationalDetails: { ...formData.educationalDetails, ...(res.data.data.educationalDetails || {}) }
-        });
+        setFormData((prev) => ({
+          personalInfo: { ...prev.personalInfo, ...pInfo },
+          communicationDetails: { ...prev.communicationDetails, ...(res.data.data.communicationDetails || {}) },
+          educationalDetails: { ...prev.educationalDetails, ...(res.data.data.educationalDetails || {}) }
+        }));
       }
     } catch (error) {
       if (error.response && error.response.status !== 404) {
@@ -48,7 +44,11 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handlePersonalChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
