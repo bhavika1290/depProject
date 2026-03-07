@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
-  const { user, logout } = useContext(AuthContext);
+  const { currentUser, logoutContext } = useAuth();
 
   return (
     <header style={{
@@ -36,12 +36,12 @@ export default function Header() {
         <Link to="/faqs" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>FAQs</Link>
         <Link to="/contact" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Contact</Link>
 
-        {user ? (
+        {currentUser ? (
           <>
-            <Link to={user.role === 'student' ? '/student' : user.role === 'faculty' ? '/faculty' : '/admin'} style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+            <Link to={currentUser.role === 'student' ? '/student' : currentUser.role === 'faculty' ? '/faculty' : '/admin'} style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
               Dashboard
             </Link>
-            <button onClick={logout} style={{
+            <button onClick={logoutContext} style={{
               background: 'transparent', border: '1px solid var(--primary-color)',
               color: 'var(--primary-color)', padding: '8px 16px', borderRadius: '4px',
               cursor: 'pointer', fontWeight: 500, transition: 'all 0.2s'

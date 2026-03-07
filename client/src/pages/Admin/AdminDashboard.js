@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { AuthContext } from '../../context/AuthContext';
-import api from '../../utils/api';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/apiCore';
 
 export default function AdminDashboard() {
-    const { user } = useContext(AuthContext);
+    const { currentUser } = useAuth();
     const [stats, setStats] = useState({
         totalApplications: 0,
         totalOfferings: 0,
@@ -34,7 +34,7 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <div>
                     <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Admin Dashboard</h2>
-                    <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Welcome back, <strong>{user?.name || user?.email}</strong>!</p>
+                    <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Welcome back, <strong>{currentUser?.name || currentUser?.email}</strong>!</p>
                 </div>
             </div>
 
