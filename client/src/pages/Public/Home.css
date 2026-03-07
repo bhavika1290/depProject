@@ -170,6 +170,65 @@
   margin-right: auto;
 }
 
+.campus-photo-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 28px;
+  align-items: center;
+  margin: 0 auto 32px;
+  padding: 32px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(15, 59, 134, 0.9), rgba(7, 24, 94, 0.95));
+  box-shadow: 0 30px 60px rgba(6, 9, 28, 0.45);
+  color: #fff;
+}
+
+.campus-photo-card {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.campus-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.campus-photo-label {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.12);
+  color: #e0e7ff;
+}
+
+.campus-photo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+}
+
+.campus-photo-text h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 700;
+}
+
+.campus-photo-text p {
+  margin: 0;
+  line-height: 1.6;
+  color: #dbeafe;
+}
+
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -311,6 +370,10 @@
   .details-card {
     padding: 18px;
   }
+
+  .campus-photo-section {
+    padding: 24px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -325,6 +388,11 @@
 
   .info-grid,
   .details-section {
+    grid-template-columns: 1fr;
+  }
+
+  .campus-photo-section {
+    padding: 20px;
     grid-template-columns: 1fr;
   }
 }

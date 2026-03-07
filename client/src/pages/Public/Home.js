@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css';
-
-const heroImage = 'https://upload.wikimedia.org/wikipedia/commons/6/68/IIT_Ropar_entrance_modern.jpg';
+import campusHero from '../../assets/images/ropar-iit (1).png';
 
 export default function Home() {
   return (
@@ -23,7 +22,7 @@ export default function Home() {
           </div>
           <div className="hero-right">
             <div className="hero-image-wrapper">
-              <img src={heroImage} alt="IIT Ropar campus" className="hero-campus" />
+              <img src={campusHero} alt="IIT Ropar campus" className="hero-campus" />
               <span className="hero-caption">IIT Ropar</span>
             </div>
           </div>
@@ -35,6 +34,24 @@ export default function Home() {
           Explore the How to Apply guide, current Openings, FAQs, and Contact page via the navigation bar above.
           Everything you need for the IIT Ropar Mathematics PhD journey lives inside this portal.
         </p>
+      </section>
+
+      <section className="campus-photo-section">
+        <div className="campus-photo-card">
+          <img src={campusHero} alt="IIT Ropar campus" className="campus-photo" />
+          <span className="campus-photo-label">IIT Ropar entrance pillars</span>
+        </div>
+        <div className="campus-photo-text">
+          <h2>Gateway to a modern civilizational legacy</h2>
+          <p>
+            The four 41-foot stone pillars carved with Indus Valley motifs are crowned by floating molecular forms,
+            symbolizing how IIT Ropar builds modern science on a timeless heritage.
+          </p>
+          <p>
+            Use this view as a reminder of the institute’s architectural statement while you track your PhD application
+            milestones on this portal.
+          </p>
+        </div>
       </section>
     </div>
   );
