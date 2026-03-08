@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import React from 'react';
+import { NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
     MdDashboard,
     MdCalendarToday,
@@ -14,13 +14,13 @@ import {
 } from 'react-icons/md';
 import '../../styles/Admin.css';
 
-const AdminLayout = ({ children }) => {
-    const { logout, user } = useContext(AuthContext);
+const AdminLayout = () => {
+    const { logoutContext, currentUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
     const handleLogout = () => {
-        logout();
+        logoutContext();
         navigate('/login');
     };
 
@@ -36,7 +36,10 @@ const AdminLayout = ({ children }) => {
     ];
 
     const getPageTitle = () => {
-        const current = navItems.find(item => item.path === location.pathname);
+        const current = navItems.find(item => {
+            if (item.path === '/admin') return location.pathname === '/admin';
+            return location.pathname.startsWith(item.path);
+        });
         return current ? current.name : 'Admin Portal';
     };
 
@@ -67,22 +70,21 @@ const AdminLayout = ({ children }) => {
                 <header className="admin-header">
                     <div className="header-title">{getPageTitle()}</div>
                     <div className="header-actions">
-                        <span>Welcome, {user?.name || user?.email}</span>
                         <button
                             onClick={handleLogout}
                             className="btn-icon"
                             title="Logout"
-                            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.5rem', display: 'flex', alignItems: 'center' }}
+                            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.8rem', display: 'flex', alignItems: 'center' }}
                         >
                             <MdPowerSettingsNew />
                         </button>
                     </div>
                 </header>
                 <section className="admin-content">
-                    <div className="admin-content-bg"></div>
-                    {children}
+                    <div className="animate-fade-in">
+                        <Outlet />
+                    </div>
                 </section>
-
             </main>
         </div>
     );

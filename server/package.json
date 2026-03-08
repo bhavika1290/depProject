@@ -7,8 +7,8 @@
     "start": "nodemon server.js",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server.js",
-    "client": "npm start --prefix client",
-    "install-all": "npm install && cd client && npm install"
+    "client": "npm start --prefix ../client",
+    "install-all": "npm install && cd ../client && npm install"
   },
   "keywords": [
     "admissions",

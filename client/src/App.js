@@ -23,7 +23,10 @@ import MyApplications from './pages/Student/MyApplications';
 import ApplicationForm from './pages/Student/ApplicationForm';
 
 // Admin Pages
+import AdminLayout from './components/Layout/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import Admissions from './pages/Admin/Admissions';
+import Templates from './pages/Admin/Templates';
 // Faculty Pages
 import FacultyLayout from './modules/faculty/components/FacultyLayout';
 import FacultyDashboard from './modules/faculty/pages/FacultyDashboard';
@@ -37,7 +40,7 @@ export default function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
-           <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/faqs" element={<FAQs />} />
             <Route path="/how-to-apply" element={<HowToApply />} />
@@ -70,9 +73,18 @@ export default function App() {
             {/* Admin Routes */}
             <Route path="/admin" element={
               <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
-                <AdminDashboard />
+                <AdminLayout />
               </ProtectedRoute>
-            } />
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="admissions" element={<Admissions />} />
+              <Route path="admins" element={<div>Admins Management</div>} />
+              <Route path="send-mail" element={<div>Send Mail</div>} />
+              <Route path="templates" element={<Templates />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="how-to-use" element={<div>How to Use</div>} />
+              <Route path="archive" element={<div>Archive</div>} />
+            </Route>
 
             {/* Faculty Routes */}
             <Route path="/faculty" element={
@@ -80,8 +92,8 @@ export default function App() {
                 <FacultyLayout />
               </ProtectedRoute>
             }>
-               <Route index element={<FacultyDashboard />} />
-               {/* Add remaining Faculty Module sub-routes here later */}
+              <Route index element={<FacultyDashboard />} />
+              {/* Add remaining Faculty Module sub-routes here later */}
             </Route>
 
             {/* Fallback */}
