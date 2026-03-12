@@ -65,30 +65,49 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div className="page-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-          <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Open Offerings ({stats.openOfferings})</h3>
+      <div className="page-card" style={{ padding: 0, overflow: 'hidden', marginTop: '30px' }}>
+        <div style={{ padding: '20px 30px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
+          <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600' }}>Open Positions</h3>
         </div>
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '0' }}>
           {offerings.length === 0 ? (
-            <p>No open offerings available at the moment.</p>
+            <p style={{ padding: '24px 30px' }}>No open offerings available at the moment.</p>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {offerings.map(offering => (
-                <li key={offering._id} style={{ border: '1px solid #e5e7eb', padding: '20px', borderRadius: 'var(--border-radius)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'box-shadow 0.2s' }} onMouseOver={e => e.currentTarget.style.boxShadow = 'var(--shadow-md)'} onMouseOut={e => e.currentTarget.style.boxShadow = 'none'}>
-                  <div>
-                    <h4 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', color: 'var(--primary-dark)' }}>{offering.department} - {offering.specialization}</h4>
-                    <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                      <span style={{ display: 'inline-block', marginRight: '15px' }}><strong>Type:</strong> {offering.offeringType}</span>
-                      <span><strong>Cycle:</strong> {offering.admissionCycleId?.name}</span>
-                    </p>
-                  </div>
-                  <Link to={`/student/apply/${offering._id}`} className="btn-primary" style={{ textDecoration: 'none' }}>
-                    Apply Now
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div className="premium-table-wrapper" style={{ boxShadow: 'none', borderRadius: 0 }}>
+              <table className="premium-table">
+                <thead style={{ backgroundColor: '#f8fafc' }}>
+                  <tr>
+                    <th style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.05em' }}>DEPARTMENT</th>
+                    <th style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.05em' }}>SPECIALIZATION</th>
+                    <th style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.05em' }}>OFFERING TYPE</th>
+                    <th style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.05em' }}>ELIGIBILITY</th>
+                    <th style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.05em' }}>DEADLINE</th>
+                    <th style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.05em' }}>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {offerings.map(offering => (
+                    <tr key={offering._id}>
+                      <td style={{ color: '#475569', fontWeight: 500 }}>{offering.department}</td>
+                      <td style={{ color: '#475569' }}>{offering.specialization}</td>
+                      <td style={{ color: '#64748b' }}>{offering.offeringType}</td>
+                      <td style={{ color: '#4f46e5', fontWeight: 600, cursor: 'pointer' }} title={offering.eligibility}>View</td>
+                      <td style={{ color: '#64748b' }}>{new Date(offering.deadline).toLocaleDateString('en-GB')}</td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                          <span className="status-pill status-open" style={{ backgroundColor: '#ccfbf1', color: '#0f766e', fontWeight: 600, fontSize: '0.75rem', padding: '4px 12px' }}>
+                            Open
+                          </span>
+                          <Link to={`/student/apply/${offering._id}`} style={{ textDecoration: 'none', color: '#4f46e5', fontWeight: 600, fontSize: '0.875rem' }}>
+                            Apply
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

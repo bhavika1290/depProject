@@ -72,12 +72,14 @@ const offeringSchema = new mongoose.Schema({
 });
 
 // Auto-update status based on deadline
-offeringSchema.pre('find', function() {
-  const now = new Date();
-  this.updateMany(
-    { deadline: { $lt: now }, status: 'Open' },
-    { status: 'Closed' }
-  );
-});
+// Note: Removed because it intercepts every find query and causes it to return empty/fail 
+// if the updateMany inside triggers a validation error (e.g. strict populated paths).
+// offeringSchema.pre('find', function() {
+//   const now = new Date();
+//   this.updateMany(
+//     { deadline: { $lt: now }, status: 'Open' },
+//     { status: 'Closed' }
+//   ).catch(err => console.error("Error in pre(find) hook:", err));
+// });
 
 module.exports = mongoose.model('Offering', offeringSchema);

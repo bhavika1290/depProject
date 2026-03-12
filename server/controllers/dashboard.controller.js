@@ -25,6 +25,46 @@ exports.getDashboardStats = async (req, res, next) => {
             .populate('userId', 'name email')
             .populate('offeringId', 'department');
 
+        // Get category stats for charts
+        const catStats = await Application.aggregate([
+            {
+                $group: {
+                    _id: '$personalDetails.category',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const categoryStats = [
+            { name: 'GEN', Applications: 0 },
+            { name: 'EWS', Applications: 0 },
+            { name: 'OBC', Applications: 0 },
+            { name: 'SC', Applications: 0 },
+            { name: 'ST', Applications: 0 }
+        ].map(cat => {
+            const found = catStats.find(s => s._id === cat.name);
+            return { ...cat, Applications: found ? found.count : 0 };
+        });
+
+        // Get gender stats for charts
+        const genStats = await Application.aggregate([
+            {
+                $group: {
+                    _id: '$personalDetails.gender',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const genderStats = [
+            { name: 'Male', Applications: 0 },
+            { name: 'Female', Applications: 0 },
+            { name: 'Other', Applications: 0 }
+        ].map(gen => {
+            const found = genStats.find(s => s._id === gen.name);
+            return { ...gen, Applications: found ? found.count : 0 };
+        });
+
         res.status(200).json({
             success: true,
             data: {
@@ -32,7 +72,9 @@ exports.getDashboardStats = async (req, res, next) => {
                 totalOfferings,
                 totalCycles,
                 recentApplications,
-                activeCycle: activeCycle || null
+                activeCycle: activeCycle || null,
+                categoryStats,
+                genderStats
             }
         });
     } catch (error) {

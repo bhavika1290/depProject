@@ -67,7 +67,7 @@ exports.checkProfileCompletion = async (req, res, next) => {
       const Profile = require('../models/Profile.model');
       const profile = await Profile.findOne({ userId: req.user.id });
 
-      if (!profile || profile.completionStatus < 100) {
+      if (!profile || profile.completionStatus < 80) {
         return res.status(403).json({
           success: false,
           message: 'Please complete your profile before applying',

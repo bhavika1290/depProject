@@ -13,17 +13,17 @@ const profileSchema = new mongoose.Schema({
     dateOfBirth: Date,
     gender: {
       type: String,
-      enum: ['Male', 'Female', 'Other']
+      enum: ['Male', 'Female', 'Other', '']
     },
     nationality: String,
     category: {
       type: String,
-      enum: ['GEN', 'SC', 'ST', 'OBC', 'EWS']
+      enum: ['GEN', 'SC', 'ST', 'OBC', 'EWS', '']
     },
     aadhaarNumber: String,
     maritalStatus: {
       type: String,
-      enum: ['Single', 'Married', 'Divorced', 'Widowed']
+      enum: ['Single', 'Married', 'Divorced', 'Widowed', '']
     },
     isPWD: {
       type: Boolean,

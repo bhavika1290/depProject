@@ -3,6 +3,7 @@ import {
   MdAdd,
   MdEdit,
   MdArchive,
+  MdDelete,
   MdSearch,
   MdFilterList,
   MdFileDownload,
@@ -23,13 +24,52 @@ export default function Admissions() {
   const [cycles, setCycles] = useState([
     { _id: '1', name: 'Admission Cycles for 2022-23', startDate: 'Apr 2023', endDate: 'Jun 2023' }
   ]);
-  const [offerings, setOfferings] = useState([
-    { _id: '1', department: 'Biomedical Engineering', specialization: 'Bio', type: 'Regular/External/Part Time', eligibility: 'View', deadline: '30/06/2023', status: 'Open' },
-    { _id: '2', department: 'Chemical Engineering', specialization: 'CE', type: 'Staff Member', eligibility: 'View', deadline: '30/06/2023', status: 'Open' },
-    { _id: '3', department: 'Physics', specialization: 'Physics', type: 'Regular/External/Part Time', eligibility: 'View', deadline: '30/06/2023', status: 'Open' },
-    { _id: '4', department: 'Metallurgical and Material Engineering', specialization: 'mme', type: 'Staff Member', eligibility: 'View', deadline: '30/06/2023', status: 'Open' },
-    { _id: '5', department: 'Humanities and Social Sciences', specialization: 'HS', type: 'Staff Member', eligibility: 'View', deadline: '30/06/2023', status: 'Open' },
-  ]);
+  const [offerings, setOfferings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showApplicantsModal, setShowApplicantsModal] = useState(false);
+  const [applicants, setApplicants] = useState([]);
+  const [applicantsLoading, setApplicantsLoading] = useState(false);
+
+  // Form State
+  const [offeringForm, setOfferingForm] = useState({
+    department: '',
+    specialization: '',
+    offeringType: 'Regular',
+    deadline: '',
+    eligibility: '',
+    admissionCycleId: '64d1f5e8e4b0a1a2b3c4d5e6' // Placeholder cycle ID
+  });
+
+  useEffect(() => {
+    fetchOfferings();
+  }, []);
+
+  const fetchOfferings = async () => {
+    try {
+      const res = await api.get('/offerings');
+      if (res.data.success) {
+        setOfferings(res.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch offerings:', error);
+    }
+  };
+
+  const fetchOfferingApplicants = async (offeringId) => {
+    try {
+      setApplicantsLoading(true);
+      setShowApplicantsModal(true);
+      const res = await api.get(`/applications?offeringId=${offeringId}`);
+      if (res.data.success) {
+        setApplicants(res.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch applicants:', error);
+      alert('Failed to load applications for this offering');
+    } finally {
+      setApplicantsLoading(false);
+    }
+  };
 
   const handleCycleClick = (cycle) => {
     setSelectedCycle(cycle);
@@ -39,6 +79,42 @@ export default function Admissions() {
   const handleBackToList = () => {
     setView('list');
     setSelectedCycle(null);
+  };
+
+  const handleOfferingChange = (e) => {
+    setOfferingForm({ ...offeringForm, [e.target.name]: e.target.value });
+  };
+
+  const handleAddOfferingSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const res = await api.post('/offerings', offeringForm);
+      if (res.data.success) {
+        setOfferings([...offerings, res.data.data]);
+        setShowOfferingModal(false);
+        setOfferingForm({ department: '', specialization: '', offeringType: 'Regular', deadline: '', eligibility: '', admissionCycleId: '64d1f5e8e4b0a1a2b3c4d5e6' });
+      }
+    } catch (error) {
+      console.error('Failed to create offering:', error);
+      alert(error.response?.data?.message || 'Failed to add offering');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteOffering = async (id) => {
+    if (window.confirm('Are you sure you want to delete this offering?')) {
+      try {
+        const res = await api.delete(`/offerings/${id}`);
+        if (res.data.success) {
+          setOfferings(offerings.filter(off => off._id !== id));
+        }
+      } catch (error) {
+        console.error('Failed to delete offering:', error);
+        alert('Failed to delete. Make sure you are an admin.');
+      }
+    }
   };
 
   return (
@@ -144,20 +220,21 @@ export default function Admissions() {
                   <tr key={off._id}>
                     <td style={{ fontWeight: 600 }}>{off.department}</td>
                     <td>{off.specialization}</td>
-                    <td>{off.type}</td>
-                    <td style={{ color: '#0070f3', cursor: 'pointer', fontWeight: 500 }}>{off.eligibility}</td>
-                    <td>{off.deadline}</td>
+                    <td>{off.offeringType}</td>
+                    <td style={{ color: '#0070f3', cursor: 'pointer', fontWeight: 500 }} title={off.eligibility}>{off.eligibility?.substring(0, 15)}...</td>
+                    <td>{new Date(off.deadline).toLocaleDateString()}</td>
                     <td>
-                      <span className={`status-pill status-${off.status.toLowerCase()}`}>
+                      <span className={`status-pill status-${off.status?.toLowerCase()}`}>
                         {off.status}
                       </span>
                     </td>
                     <td style={{ color: '#64748b', fontSize: '0.85rem' }}>Not Published</td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                        <button className="cycle-btn" style={{ width: '32px', height: '32px' }}><MdPeople /></button>
-                        <button className="cycle-btn" style={{ width: '32px', height: '32px' }}><MdEdit /></button>
-                        <button className="cycle-btn" style={{ width: '32px', height: '32px', color: '#ef4444' }}><MdArchive /></button>
+                        <button className="cycle-btn" style={{ width: '32px', height: '32px' }} title="View Applicants" onClick={() => fetchOfferingApplicants(off._id)}><MdPeople /></button>
+                        <button className="cycle-btn" style={{ width: '32px', height: '32px' }} title="Edit"><MdEdit /></button>
+                        <button className="cycle-btn" style={{ width: '32px', height: '32px', color: '#f59e0b' }} title="Archive"><MdArchive /></button>
+                        <button className="cycle-btn" style={{ width: '32px', height: '32px', color: '#ef4444' }} title="Delete" onClick={() => handleDeleteOffering(off._id)}><MdDelete /></button>
                       </div>
                     </td>
                   </tr>
@@ -253,53 +330,98 @@ export default function Admissions() {
               </button>
             </div>
 
-            <div className="form-grid">
+            <form onSubmit={handleAddOfferingSubmit} className="form-grid">
               <div className="form-group">
                 <label className="form-label">Department</label>
-                <select className="form-input">
-                  <option>- Select -</option>
-                  <option>Biomedical Engineering</option>
-                  <option>Chemical Engineering</option>
+                <select className="form-input" name="department" value={offeringForm.department} onChange={handleOfferingChange} required>
+                  <option value="">- Select -</option>
+                  <option value="Biomedical Engineering">Biomedical Engineering</option>
+                  <option value="Chemical Engineering">Chemical Engineering</option>
+                  <option value="Civil Engineering">Civil Engineering</option>
+                  <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Physics">Physics</option>
                 </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Specialization</label>
-                <input type="text" className="form-input" placeholder="e.g. Bio" />
+                <input type="text" className="form-input" name="specialization" value={offeringForm.specialization} onChange={handleOfferingChange} placeholder="e.g. Bio" required />
               </div>
 
               <div className="form-group full-width">
                 <label className="form-label">Offering Type</label>
-                <select className="form-input">
-                  <option>None</option>
-                  <option>Regular/External/Part Time</option>
-                  <option>Staff Member</option>
+                <select className="form-input" name="offeringType" value={offeringForm.offeringType} onChange={handleOfferingChange} required>
+                  <option value="Regular">Regular</option>
+                  <option value="External">External</option>
+                  <option value="Part-Time">Part-Time</option>
+                  <option value="Direct">Direct</option>
+                  <option value="Staff Member">Staff Member</option>
+                  <option value="Project Staff">Project Staff</option>
                 </select>
               </div>
 
               <div className="form-group full-width">
                 <label className="form-label">Deadline</label>
-                <input type="date" className="form-input" />
+                <input type="date" className="form-input" name="deadline" value={offeringForm.deadline} onChange={handleOfferingChange} required />
               </div>
 
               <div className="form-group full-width">
                 <label className="form-label">Eligibility</label>
-                <textarea className="form-input" style={{ minHeight: '120px' }} placeholder="Enter eligibility criteria..."></textarea>
-              </div>
-
-              <div className="form-group full-width" style={{ display: 'flex', flexDirection: 'row', gap: '30px', margin: '15px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <input type="checkbox" style={{ width: '18px', height: '18px' }} />
-                  <label className="form-label">Accept Applications</label>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <input type="checkbox" style={{ width: '18px', height: '18px' }} />
-                  <label className="form-label">Draft Mode</label>
-                </div>
+                <textarea className="form-input" style={{ minHeight: '120px' }} name="eligibility" value={offeringForm.eligibility} onChange={handleOfferingChange} placeholder="Enter eligibility criteria..." required></textarea>
               </div>
 
               <div className="form-group full-width">
-                <button className="btn-primary" style={{ justifyContent: 'center', padding: '14px' }}>Add Offering</button>
+                <button type="submit" disabled={loading} className="btn-primary" style={{ justifyContent: 'center', padding: '14px' }}>{loading ? 'Adding...' : 'Add Offering'}</button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW APPLICANTS MODAL */}
+      {showApplicantsModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '800px' }}>
+            <div className="modal-header">
+              <h2>Applications</h2>
+              <button onClick={() => setShowApplicantsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem' }}>
+                <MdClose />
+              </button>
+            </div>
+
+            <div style={{ marginTop: '20px' }}>
+              {applicantsLoading ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}>Loading applications...</div>
+              ) : applicants.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>No applications received for this offering yet.</div>
+              ) : (
+                <div className="premium-table-wrapper">
+                  <table className="premium-table">
+                    <thead>
+                      <tr>
+                        <th>Applicant Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Applied On</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {applicants.map(app => (
+                        <tr key={app._id}>
+                          <td style={{ fontWeight: 500 }}>{app.userId?.name || 'N/A'}</td>
+                          <td>{app.userId?.email || 'N/A'}</td>
+                          <td>
+                            <span className={`status-pill status-${app.status?.toLowerCase().replace(' ', '-')}`}>
+                              {app.status}
+                            </span>
+                          </td>
+                          <td>{new Date(app.submittedAt || app.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>

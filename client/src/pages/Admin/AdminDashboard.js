@@ -73,8 +73,8 @@ export default function AdminDashboard() {
                         <MdCalendarToday />
                     </div>
                     <div className="stat-info">
-                        <span className="stat-value">Admission Cycles</span>
-                        <span className="stat-label">for 2022-23</span>
+                        <span className="stat-value">{stats.totalCycles}</span>
+                        <span className="stat-label">Cycles ({stats.activeCycle?.name || 'None Active'})</span>
                     </div>
                 </div>
 
@@ -84,7 +84,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="stat-info">
                         <span className="stat-value">{stats.totalApplications}</span>
-                        <span className="stat-label">Total Application</span>
+                        <span className="stat-label">Total Applications</span>
                     </div>
                 </div>
             </div>

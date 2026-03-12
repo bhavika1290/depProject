@@ -21,6 +21,18 @@ const applicationSchema = new mongoose.Schema({
     required: true
   },
   
+  // General Application Details (Step 1)
+  generalApplicationDetails: {
+    interdisciplinaryProgram: {
+      type: Boolean,
+      default: false
+    },
+    interdisciplinaryDepartment: String,
+    modeOfApplication: String,
+    areaOfResearchPrefs: [String], // Array up to 4 preferences
+    specificAreaOfResearch: String
+  },
+
   // Personal Details (from profile)
   personalDetails: {
     fullName: String,
@@ -54,6 +66,31 @@ const applicationSchema = new mongoose.Schema({
     ug: Object,
     pg: Object
   },
+
+  // Qualifying Exam Details (Step 2)
+  qualifyingExams: [{
+    examName: String,
+    subject: String,
+    yearOfPassing: Number,
+    score: String,
+    rank: String,
+    validUpTo: Date
+  }],
+
+  // Experiences and Publications (Step 3)
+  experienceDetails: [{
+    organization: String,
+    designation: String,
+    startDate: Date,
+    endDate: Date,
+    responsibilities: String
+  }],
+  publications: [{
+    title: String,
+    journal: String,
+    year: Number,
+    status: String
+  }],
   
   // Documents
   documents: {
@@ -66,8 +103,9 @@ const applicationSchema = new mongoose.Schema({
     other: [String]
   },
   
-  // Payment Details
+  // Payment Details (Step 4)
   paymentDetails: {
+    category: String,
     amount: Number,
     transactionId: String,
     bank: String,
@@ -78,6 +116,12 @@ const applicationSchema = new mongoose.Schema({
       enum: ['Pending', 'Completed', 'Failed'],
       default: 'Pending'
     }
+  },
+
+  // Declaration (Step 5)
+  declarationAccepted: {
+    type: Boolean,
+    default: false
   },
   
   // Application Status
@@ -111,7 +155,7 @@ const applicationSchema = new mongoose.Schema({
 // Generate application ID before saving
 applicationSchema.pre('save', async function(next) {
   if (!this.applicationId) {
-    const count = await this.constructor.countDocuments();
+    const count = await mongoose.model('Application').countDocuments();
     this.applicationId = `APP${new Date().getFullYear()}${String(count + 1).padStart(6, '0')}`;
   }
   next();

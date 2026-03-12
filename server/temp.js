@@ -12,7 +12,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [process.env.CLIENT_URL || 'http://localhost:3000', 'http://localhost:3001'],
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());
@@ -26,22 +26,12 @@ const authRoutes = require('./modules/auth/auth.routes');
 const adminRoutes = require('./modules/admin/admin.routes');
 const facultyRoutes = require('./modules/faculty/faculty.routes');
 const studentRoutes = require('./modules/student/student.routes');
-const userRoutes = require('./routes/user.routes');
-const offeringRoutes = require('./routes/offering.routes');
-const applicationRoutes = require('./routes/application.routes');
-const dashboardRoutes = require('./routes/dashboard.routes');
-const admissionCycleRoutes = require('./routes/admissionCycle.routes');
 
 // API Routes mounting
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/student', studentRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/offerings', offeringRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/admission-cycles', admissionCycleRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
