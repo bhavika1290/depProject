@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import { AuthProvider } from './context/AuthContext';
@@ -30,13 +30,24 @@ import Templates from './pages/Admin/Templates';
 // Faculty Pages
 import FacultyLayout from './modules/faculty/components/FacultyLayout';
 import FacultyDashboard from './modules/faculty/pages/FacultyDashboard';
+import CreateOpening from './modules/faculty/pages/CreateOpening';
+import MyOpenings from './modules/faculty/pages/MyOpenings';
+import Applicants from './modules/faculty/pages/Applicants';
+import FilterSortApplicants from './modules/faculty/pages/FilterSortApplicants';
+import ShortlistedCandidates from './modules/faculty/pages/ShortlistedCandidates';
+import FinalRecommendations from './modules/faculty/pages/FinalRecommendations';
+import FacultyProfile from './modules/faculty/pages/FacultyProfile';
 
 export default function App() {
+  const location = useLocation();
+  // Faculty and Admin have their own navbars – hide the global header/footer for them
+  const hideGlobalNav = location.pathname.startsWith('/faculty') || location.pathname.startsWith('/admin');
+
   return (
     <AuthProvider>
       <div className="app-root">
-        <Header />
-        <main style={{ padding: '20px', minHeight: '80vh' }}>
+        {!hideGlobalNav && <Header />}
+        <main style={{ padding: hideGlobalNav ? '0' : '20px', minHeight: '80vh' }}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
@@ -93,6 +104,13 @@ export default function App() {
               </ProtectedRoute>
             }>
               <Route index element={<FacultyDashboard />} />
+              <Route path="openings" element={<MyOpenings />} />
+              <Route path="openings/create" element={<CreateOpening />} />
+              <Route path="applicants" element={<Applicants />} />
+              <Route path="applicants/filter" element={<FilterSortApplicants />} />
+              <Route path="shortlisted" element={<ShortlistedCandidates />} />
+              <Route path="recommendations" element={<FinalRecommendations />} />
+              <Route path="profile" element={<FacultyProfile />} />
               {/* Add remaining Faculty Module sub-routes here later */}
             </Route>
 
@@ -100,7 +118,7 @@ export default function App() {
             <Route path="*" element={<div>Page Not Found</div>} />
           </Routes>
         </main>
-        <Footer />
+        {!hideGlobalNav && <Footer />}
       </div>
     </AuthProvider>
   );

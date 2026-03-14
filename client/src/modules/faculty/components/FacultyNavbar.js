@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import './FacultyNavbar.css';
 
-export default function FacultyNavbar({ activeCycle = "PhD 2026" }) {
+export default function FacultyNavbar({ activeCycle = "PhD 2026", sidebarOpen = false, onToggleSidebar }) {
     const { currentUser, logoutContext } = useAuth();
     const navigate = useNavigate();
 
@@ -12,44 +13,57 @@ export default function FacultyNavbar({ activeCycle = "PhD 2026" }) {
     };
 
     return (
-        <nav style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 24px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0',
-            position: 'sticky', top: 0, zIndex: 100, height: '64px'
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                <h1 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--primary-color)', fontWeight: 600 }}>
-                    IIT Ropar PhD Admission Portal
-                </h1>
-                <div style={{ padding: '4px 12px', backgroundColor: '#f1f5f9', borderRadius: '16px', fontSize: '0.875rem', color: '#475569', fontWeight: 500 }}>
-                    Cycle: {activeCycle}
+        <nav className="faculty-navbar">
+            {/* Left: Hamburger + Logo + Title */}
+            <div className="fn-left">
+                {/* ☰ Hamburger */}
+                <button
+                    className={`fn-hamburger ${sidebarOpen ? 'fn-hamburger--open' : ''}`}
+                    onClick={onToggleSidebar}
+                    title={sidebarOpen ? 'Close menu' : 'Open menu'}
+                    aria-label="Toggle navigation"
+                >
+                    <span /><span /><span />
+                </button>
+
+                <img
+                    src="https://www.uxdt.nic.in/wp-content/uploads/2024/06/iit-ropar-01.jpg"
+                    alt="IIT Ropar Logo"
+                    className="fn-logo"
+                />
+                <div className="fn-title-group">
+                    <h1 className="fn-title">PhD Admission Portal</h1>
+                    <p className="fn-subtitle">Department of Mathematics, IIT Ropar</p>
                 </div>
+                <div className="fn-cycle-badge">Cycle: {activeCycle}</div>
+
+                {/* ← Back to Home */}
+                <Link to="/" className="fn-back-home">
+                    ← Back to Home
+                </Link>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                <button style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', position: 'relative' }}>
+            {/* Right: Controls */}
+            <div className="fn-right">
+                {/* Notification bell */}
+                <button className="fn-icon-btn" title="Notifications">
                     🔔
-                    <span style={{ position: 'absolute', top: '-4px', right: '-4px', backgroundColor: '#ef4444', height: '8px', width: '8px', borderRadius: '50%' }}></span>
+                    <span className="fn-notif-dot" />
                 </button>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderLeft: '1px solid #e2e8f0', paddingLeft: '20px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>Dr. {currentUser?.name || "Faculty Member"}</span>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'capitalize' }}>{currentUser?.role || "Faculty"}</span>
+
+                {/* Faculty avatar + name */}
+                <div className="fn-user">
+                    <div className="fn-user-text">
+                        <span className="fn-user-name">{currentUser?.name ? `Dr. ${currentUser.name}` : 'Faculty Member'}</span>
+                        <span className="fn-user-role">{currentUser?.role || 'Faculty'}</span>
                     </div>
-                    <div style={{ 
-                        height: '36px', width: '36px', borderRadius: '50%', backgroundColor: 'var(--primary-color)', 
-                        color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' 
-                    }}>
+                    <div className="fn-avatar">
                         {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'F'}
                     </div>
                 </div>
 
-                <button onClick={handleLogout} style={{
-                    background: 'transparent', border: '1px solid #cbd5e1', color: '#475569',
-                    padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem',
-                    fontWeight: 500, transition: 'all 0.2s', marginLeft: '8px'
-                }}>
+                {/* Single logout button */}
+                <button className="fn-logout-btn" onClick={handleLogout}>
                     Logout
                 </button>
             </div>
