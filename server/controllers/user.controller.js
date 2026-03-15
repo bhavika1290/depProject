@@ -157,7 +157,7 @@ exports.getAllUsers = async (req, res) => {
 // @access  Private/SuperAdmin
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, password, role, departments } = req.body;
+    const { name, email, password, role, departments, designation, researchArea, status } = req.body;
 
 
     const existingUser = await User.findOne({ email });
@@ -174,6 +174,9 @@ exports.createUser = async (req, res) => {
       password,
       role,
       departments,
+      designation,
+      researchArea,
+      status: status || 'Active',
       isVerified: true // Auto-verify admin/faculty users
     });
 

@@ -1,19 +1,19 @@
 :root {
-    --admin-primary: #006680;
+    --admin-primary: #1e3a8a; /* Deep IIT Blue */
     --admin-secondary: #004d61;
-    --admin-bg: #f5f7fa;
+    --admin-bg: #f8fafc;
     --admin-sidebar-bg: #ffffff;
-    --admin-sidebar-text: #4a5568;
-    --admin-sidebar-active-bg: #000000;
+    --admin-sidebar-text: #4b5563;
+    --admin-sidebar-active-bg: #1e3a8a;
     --admin-sidebar-active-text: #ffffff;
-    --admin-header-bg: #000000;
-    --admin-header-text: #ffffff;
+    --admin-header-bg: #ffffff;
+    --admin-header-text: #1f2937;
     --admin-card-bg: #ffffff;
-    --admin-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --premium-red: #ff5e7e;
-    --premium-orange: #ff9f43;
-    --premium-purple: #7d5fff;
-    --premium-teal: #008080;
+    --admin-card-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); /* Softer shadow */
+    --premium-red: #ef4444;
+    --premium-orange: #f59e0b;
+    --premium-purple: #4f46e5;
+    --premium-teal: #10b981;
 }
 
 .admin-container {
@@ -87,8 +87,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-image: radial-gradient(at 0% 0%, rgba(0, 102, 128, 0.03) 0, transparent 50%),
-        radial-gradient(at 50% 0%, rgba(0, 102, 128, 0.02) 0, transparent 50%);
+    /* Use very subtle background instead of dark blue gradient */
+    background: var(--admin-bg);
 }
 
 .admin-header {

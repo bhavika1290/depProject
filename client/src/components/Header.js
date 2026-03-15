@@ -1,65 +1,63 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import './Header.css'; // We will create this
 
 export default function Header() {
   const { currentUser, logoutContext } = useAuth();
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header style={{
-      backgroundColor: '#ffffff',
-      padding: '15px 40px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      position: 'sticky',
-      top: 0,
-      zIndex: 1000
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <img
-          src="https://www.uxdt.nic.in/wp-content/uploads/2024/06/iit-ropar-01.jpg"
-          alt="IIT Ropar official logo"
-          style={{ width: '64px', height: '64px', objectFit: 'contain' }}
-        />
-        <Link to="/" style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--primary-color)', letterSpacing: '-0.02em', textDecoration: 'none' }}>
-          IIT Ropar Maths Dept
-        </Link>
+    <header className={`modern-header ${scrolled ? 'scrolled' : ''}`}>
+      <div className="header-container">
+        <div className="header-logo-section">
+          <img
+            src="https://www.uxdt.nic.in/wp-content/uploads/2024/06/iit-ropar-01.jpg"
+            alt="IIT Ropar official logo"
+            className="header-logo-img"
+          />
+          <Link to="/" className="header-brand">
+            <span className="brand-title">IIT Ropar</span>
+            <span className="brand-subtitle">Department of Mathematics</span>
+          </Link>
+        </div>
+
+        <nav className="header-nav">
+          <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
+          <Link to="/how-to-apply" className={`nav-link ${location.pathname === '/how-to-apply' ? 'active' : ''}`}>How to Apply</Link>
+          <Link to="/openings" className={`nav-link ${location.pathname === '/openings' ? 'active' : ''}`}>Openings</Link>
+          <Link to="/more-info" className={`nav-link ${location.pathname === '/more-info' ? 'active' : ''}`}>More Info</Link>
+          <Link to="/faqs" className={`nav-link ${location.pathname === '/faqs' ? 'active' : ''}`}>FAQs</Link>
+          <Link to="/contact" className={`nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>Contact</Link>
+
+          <div className="header-actions">
+            {currentUser ? (
+              <>
+                <Link to={currentUser.role === 'student' ? '/student' : currentUser.role === 'faculty' ? '/faculty' : '/admin'} className="btn-modern-outline">
+                  Dashboard
+                </Link>
+                <button onClick={logoutContext} className="btn-modern-outline logout-btn">
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="btn-modern-outline">Login</Link>
+                <Link to="/register" className="btn-modern-solid">Sign Up</Link>
+              </>
+            )}
+          </div>
+        </nav>
       </div>
-
-      <nav style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <Link to="/" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Home</Link>
-        <Link to="/how-to-apply" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>How to Apply</Link>
-        <Link to="/openings" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Openings</Link>
-        <Link to="/more-info" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>More Info</Link>
-        <Link to="/faqs" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>FAQs</Link>
-        <Link to="/contact" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Contact</Link>
-
-        {currentUser ? (
-          <>
-            <Link to={currentUser.role === 'student' ? '/student' : currentUser.role === 'faculty' ? '/faculty' : '/admin'} style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-              Dashboard
-            </Link>
-            <button onClick={logoutContext} style={{
-              background: 'transparent', border: '1px solid var(--primary-color)',
-              color: 'var(--primary-color)', padding: '8px 16px', borderRadius: '4px',
-              cursor: 'pointer', fontWeight: 500, transition: 'all 0.2s'
-            }} onMouseOver={e => { e.currentTarget.style.background = 'var(--primary-color)'; e.currentTarget.style.color = 'white'; }} onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary-color)'; }}>
-              Sign out
-            </button>
-          </>
-        ) : (
-          <>
-            <Link to="/login" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Login</Link>
-            <Link to="/register" style={{
-              background: 'var(--primary-color)', color: 'white',
-              padding: '8px 16px', borderRadius: '4px', textDecoration: 'none',
-              fontWeight: 500
-            }}>Register</Link>
-          </>
-        )}
-      </nav>
     </header>
   );
 }

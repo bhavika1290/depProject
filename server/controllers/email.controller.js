@@ -256,3 +256,65 @@ exports.getEmailLogs = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Send custom emails (to dynamic recipients)
+// @route   POST /api/emails/send-custom
+// @access  Private (Admin)
+exports.sendCustomEmails = async (req, res, next) => {
+    try {
+        const { recipients, subject, html } = req.body;
+
+        if (!recipients || !recipients.length || !subject || !html) {
+            return res.status(400).json({ success: false, message: 'Please provide recipients, subject, and email body.' });
+        }
+
+        let successful = 0;
+        let failed = 0;
+        const errors = [];
+
+        for (const recipient of recipients) {
+            let status = 'Pending';
+            let errorMessage = '';
+
+            try {
+                // Personalize body if desired
+                let personalizedHtml = html.replace(/{{name}}/gi, recipient.name || 'User');
+                let plainText = personalizedHtml.replace(/<[^>]*>?/gm, '');
+
+                await emailUtil.sendEmail({
+                    email: recipient.email,
+                    subject: subject,
+                    message: plainText,
+                    html: personalizedHtml
+                });
+
+                status = 'Sent';
+                successful++;
+            } catch (err) {
+                status = 'Failed';
+                errorMessage = err.message;
+                errors.push({ email: recipient.email, error: errorMessage });
+                failed++;
+            }
+
+            // Create log entry for auditing
+            await EmailLog.create({
+                recipientEmail: recipient.email,
+                recipientName: recipient.name,
+                subject: subject,
+                body: html,
+                status: status,
+                errorMessage: errorMessage,
+                sentBy: req.user.id
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Processed ${recipients.length} emails. ${successful} sent, ${failed} failed.`,
+            data: { successful, failed, errors }
+        });
+    } catch (error) {
+        next(error);
+    }
+};

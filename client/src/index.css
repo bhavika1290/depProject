@@ -1,21 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600&display=swap');
 
 :root {
   /* IIT Ropar Brand Colors (Approximated for modern web) */
   --primary-color: #1e3a8a; /* Deep Blue */
   --primary-light: #3b82f6; 
   --primary-dark: #1e40af;
-  --accent-color: #f59e0b; /* Golden Yellow Accent */
+  --accent-color: #f59e0b; /* Subtle gold accent */
   --accent-light: #fbbf24;
   --accent-dark: #d97706;
 
   /* Neutrals */
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
   --text-muted: #9ca3af;
-  --bg-main: #f3f4f6;
+  --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  --bg-hover: #f9fafb;
+  --bg-hover: #f1f5f9;
   
   /* Status Colors */
   --success: #10b981;
@@ -48,13 +48,14 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-main);
   color: var(--text-primary);
-  line-height: 1.5;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
   color: var(--primary-color);
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
@@ -79,11 +80,55 @@ button {
   font-weight: 500;
   border-radius: var(--border-radius);
   transition: var(--transition);
+  cursor: pointer;
 }
 
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+  border: 1px solid var(--primary-color);
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn-secondary:hover {
+  background: #eff6ff;
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn-danger:hover {
+  background: var(--danger-light);
 }
 
 /* Animations */

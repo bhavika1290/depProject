@@ -46,6 +46,18 @@ const userSchema = new mongoose.Schema({
   profileCompleted: {
     type: Boolean,
     default: false
+  },
+  designation: {
+    type: String,
+    enum: ['Professor', 'Associate Professor', 'Assistant Professor', 'Guest Faculty']
+  },
+  researchArea: {
+    type: String
+  },
+  status: {
+    type: String,
+    enum: ['Active', 'Inactive'],
+    default: 'Active'
   }
 }, {
   timestamps: true

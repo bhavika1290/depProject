@@ -30,6 +30,7 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import Admissions from './pages/Admin/Admissions';
 import AuditResults from './pages/Admin/AuditResults';
 import Templates from './pages/Admin/Templates';
+import Faculties from './pages/Admin/Faculties';
 // Faculty Pages
 import FacultyLayout from './modules/faculty/components/FacultyLayout';
 import FacultyDashboard from './modules/faculty/pages/FacultyDashboard';
@@ -93,7 +94,7 @@ export default function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="admissions" element={<Admissions />} />
               <Route path="audit" element={<AuditResults />} />
-              <Route path="admins" element={<div>Admins Management</div>} />
+              <Route path="faculties" element={<Faculties />} />
               <Route path="send-mail" element={<div>Send Mail</div>} />
               <Route path="templates" element={<Templates />} />
               <Route path="profile" element={<Profile />} />

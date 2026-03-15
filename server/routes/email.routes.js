@@ -23,4 +23,7 @@ router.post('/resend/:fileId', protect, authorize('admin', 'superadmin'), emailC
 
 router.get('/logs', protect, authorize('admin', 'superadmin'), emailController.getEmailLogs);
 
+// Custom email sending
+router.post('/send-custom', protect, authorize('admin', 'superadmin'), emailController.sendCustomEmails);
+
 module.exports = router;
