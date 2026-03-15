@@ -63,9 +63,6 @@
 }
 .badge-pending-scheduling { background-color: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1; }
 .badge-scheduled { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.badge-selected { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; box-shadow: 0 0 10px rgba(34,197,94,0.2); }
-.badge-waitlisted { background-color: #fef9c3; color: #a16207; border: 1px solid #fde047; }
-.badge-rejected { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
 .large-badge { font-size: 0.85rem; padding: 6px 16px; }
 .date-subtext { font-size: 0.8rem; color: #64748b; font-weight: 500;}
@@ -80,7 +77,7 @@
 
 .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
 .icon-btn { padding: 6px 8px; font-size: 1rem; border-radius: 6px; }
-.result-actions { display: flex; gap: 6px; background: #f1f5f9; padding: 4px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.reschedule-box { display: flex; gap: 6px; padding: 4px; border-radius: 8px; }
 
 .schedule-btn { background: #3b82f6; border-color: #3b82f6; }
 .schedule-btn:hover { background: #2563eb; }

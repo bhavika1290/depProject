@@ -269,7 +269,7 @@ exports.updateApplication = async (req, res, next) => {
 // @access  Private (Admin)
 exports.updateApplicationStatus = async (req, res, next) => {
     try {
-        const { status, remarks, result } = req.body;
+        const { status, remarks, result, interviewStatus, interviewDate, facultyRemarks, interviewScore, admissionRank } = req.body;
         let application = await Application.findById(req.params.id);
 
         if (!application) {
@@ -279,6 +279,17 @@ exports.updateApplicationStatus = async (req, res, next) => {
         if (status) application.status = status;
         if (remarks) application.remarks = remarks;
         if (result) application.result = result;
+        if (interviewStatus) application.interviewStatus = interviewStatus;
+        if (interviewDate) application.interviewDate = new Date(interviewDate);
+        if (facultyRemarks) application.facultyRemarks = facultyRemarks;
+        
+        // Ensure numeric casting for scores and ranks
+        if (interviewScore !== undefined && interviewScore !== '') {
+            application.interviewScore = Number(interviewScore);
+        }
+        if (admissionRank !== undefined && admissionRank !== '') {
+            application.admissionRank = Number(admissionRank);
+        }
 
         if (status || result) {
             application.reviewedAt = Date.now();
@@ -362,6 +373,72 @@ exports.exportApplications = async (req, res, next) => {
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="applications_${Date.now()}.xlsx"`);
+        res.send(buf);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Export shortlisted/scheduled candidates for interview
+// @route   GET /api/applications/export-shortlisted
+// @access  Private (Admin)
+exports.exportShortlistedCandidates = async (req, res, next) => {
+    try {
+        const applications = await Application.find({
+            status: 'Shortlisted'
+        })
+            .populate('userId', 'name email')
+            .populate('offeringId', 'department specialization facultyInCharge')
+            .lean();
+
+        if (applications.length === 0) {
+            return res.status(404).json({ success: false, message: 'No shortlisted candidates found to export' });
+        }
+
+        const dataForExcel = applications.map(app => {
+            const gateExam = app.qualifyingExams?.find(e => e.examName === 'GATE');
+            const netExam = app.qualifyingExams?.find(e => e.examName === 'CSIR-NET' || e.examName === 'UGC-NET');
+            const nbhmExam = app.qualifyingExams?.find(e => e.examName === 'NBHM');
+            const interviewDateFormatted = app.interviewDate
+                ? new Date(app.interviewDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+                : 'Not Scheduled';
+
+            return {
+                'Application ID': app.applicationId || 'N/A',
+                'Student Name': app.personalDetails?.fullName || app.userId?.name || 'N/A',
+                'Email': app.userId?.email || 'N/A',
+                'Phone': app.communicationDetails?.phone || 'N/A',
+                'Category': app.personalDetails?.category || 'General',
+                'Department': app.offeringId?.department || 'N/A',
+                'Research Area': app.offeringId?.specialization || 'N/A',
+                'MSc CGPA': app.educationalDetails?.pg?.cgpa || 'N/A',
+                'BSc CGPA': app.educationalDetails?.ug?.cgpa || 'N/A',
+                'GATE Score': gateExam?.score || 'N/A',
+                'CSIR-NET/UGC-NET': netExam ? 'Qualified' : 'No',
+                'NBHM': nbhmExam ? 'Qualified' : 'No',
+                'Publications': (app.publications?.length || 0) > 0 ? 'Yes' : 'No',
+                'Application Status': app.status,
+                'Interview Status': app.interviewStatus || 'Pending Scheduling',
+                'Interview Date & Time': interviewDateFormatted,
+                'Faculty Remarks': app.facultyRemarks || 'N/A',
+                'Submitted Date': app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'N/A'
+            };
+        });
+
+        const wb = xlsx.utils.book_new();
+        const ws = xlsx.utils.json_to_sheet(dataForExcel);
+
+        // Auto-size columns
+        const colWidths = Object.keys(dataForExcel[0] || {}).map(key => ({
+            wch: Math.max(key.length, 20)
+        }));
+        ws['!cols'] = colWidths;
+
+        xlsx.utils.book_append_sheet(wb, ws, 'Shortlisted Candidates');
+        const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="shortlisted_candidates_${Date.now()}.xlsx"`);
         res.send(buf);
     } catch (error) {
         next(error);

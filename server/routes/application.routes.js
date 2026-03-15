@@ -17,13 +17,16 @@ router.post(
   ]),
   applicationController.createApplication
 );
-router.get('/:id', protect, applicationController.getApplicationById);
 
-// Admin/Faculty routes
+// Admin/Faculty static routes — must come BEFORE /:id to avoid param collision
 router.get('/', protect, authorize('admin', 'faculty', 'superadmin'), applicationController.getAllApplications);
+router.get('/export-shortlisted', protect, authorize('admin', 'superadmin'), applicationController.exportShortlistedCandidates);
+router.get('/export/:cycleId/:offeringId', protect, authorize('admin', 'faculty', 'superadmin'), applicationController.exportApplications);
+
+// Parameterized routes
+router.get('/:id', protect, applicationController.getApplicationById);
 router.put('/:id', protect, authorize('admin', 'superadmin'), applicationController.updateApplication);
 router.delete('/:id', protect, authorize('admin', 'superadmin'), applicationController.deleteApplication);
 router.put('/:id/status', protect, authorize('admin', 'faculty', 'superadmin'), applicationController.updateApplicationStatus);
-router.get('/export/:cycleId/:offeringId', protect, authorize('admin', 'faculty', 'superadmin'), applicationController.exportApplications);
 
 module.exports = router;

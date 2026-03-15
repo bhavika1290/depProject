@@ -31,6 +31,8 @@ const offeringRoutes = require('./routes/offering.routes');
 const applicationRoutes = require('./routes/application.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const admissionCycleRoutes = require('./routes/admissionCycle.routes');
+const templateRoutes = require('./routes/template.routes');
+const emailRoutes = require('./routes/email.routes');
 
 // API Routes mounting
 app.use('/api/auth', authRoutes);
@@ -42,6 +44,8 @@ app.use('/api/offerings', offeringRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admission-cycles', admissionCycleRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/emails', emailRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

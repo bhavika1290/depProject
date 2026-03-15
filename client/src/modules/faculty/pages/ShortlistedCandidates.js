@@ -129,20 +129,6 @@ export default function ShortlistedCandidates() {
         }
     };
 
-    const handleUpdateStatus = async (appId, newStatus) => {
-        const candidate = candidates.find(c => c.id === appId);
-        if(!candidate || !candidate._id) return;
-
-        try {
-            await api.put(`/applications/${candidate._id}/status`, { interviewStatus: newStatus });
-            setCandidates(prev => prev.map(c => c.id === appId ? { ...c, interviewStatus: newStatus } : c));
-            let type = newStatus === 'Selected' ? toast.success : newStatus === 'Rejected' ? toast.error : toast.info;
-            type(`Candidate marked as ${newStatus}.`);
-        } catch (err) {
-            toast.error('Failed to update status.');
-        }
-    };
-
     const openScheduleModal = (candidate) => {
         setCandidateToSchedule(candidate);
         setScheduleDate('');
@@ -205,7 +191,7 @@ export default function ShortlistedCandidates() {
             <div className="page-header">
                 <div className="header-title">
                     <h2>Shortlisted Candidates</h2>
-                    <p>Manage interview scheduling and track final admissions selection.</p>
+                    <p>Schedule interviews for shortlisted candidates. These dates will be used for automated email notifications.</p>
                 </div>
             </div>
 
@@ -232,9 +218,6 @@ export default function ShortlistedCandidates() {
                         <option value="All">All Statuses</option>
                         <option value="Pending Scheduling">Pending Scheduling</option>
                         <option value="Scheduled">Scheduled</option>
-                        <option value="Selected">Selected</option>
-                        <option value="Waitlisted">Waitlisted</option>
-                        <option value="Rejected">Rejected</option>
                     </select>
                 </div>
             </div>
@@ -299,19 +282,17 @@ export default function ShortlistedCandidates() {
 
                                             {/* Post-Interview Workflow */}
                                             {c.interviewStatus === 'Scheduled' && (
-                                                <div className="result-actions">
-                                                    <button className="btn btn-success btn-sm icon-btn" title="Mark Selected" onClick={() => handleUpdateStatus(c.id, 'Selected')}>✅</button>
-                                                    <button className="btn btn-warning btn-sm icon-btn" title="Mark Waitlisted" onClick={() => handleUpdateStatus(c.id, 'Waitlisted')}>⏳</button>
-                                                    <button className="btn btn-danger btn-sm icon-btn" title="Mark Rejected" onClick={() => handleUpdateStatus(c.id, 'Rejected')}>❌</button>
+                                                <div className="reschedule-box">
+                                                    <button className="btn btn-outline-primary btn-sm schedule-btn" onClick={() => openScheduleModal(c)}>
+                                                        🔄 Reschedule
+                                                    </button>
                                                 </div>
                                             )}
 
                                             {/* Utilities */}
-                                            {c.interviewStatus !== 'Selected' && c.interviewStatus !== 'Waitlisted' && c.interviewStatus !== 'Rejected' && (
-                                                <button className="btn btn-outline-danger btn-sm remove-btn tooltip-trigger" title="Remove from Shortlist" onClick={() => handleRemove(c.id)}>
-                                                    🗑️
-                                                </button>
-                                            )}
+                                            <button className="btn btn-outline-danger btn-sm remove-btn tooltip-trigger" title="Remove from Shortlist" onClick={() => handleRemove(c.id)}>
+                                                🗑️
+                                            </button>
                                             <button className="btn btn-secondary btn-sm view-btn" onClick={() => handleViewProfile(c)}>
                                                 View Profile
                                             </button>

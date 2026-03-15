@@ -277,13 +277,32 @@ exports.sendCustomEmails = async (req, res, next) => {
             let errorMessage = '';
 
             try {
-                // Personalize body if desired
-                let personalizedHtml = html.replace(/{{name}}/gi, recipient.name || 'User');
+                // Personalize body and subject with all available recipient fields
+                const year = new Date().getFullYear();
+                const name = recipient.name || 'Applicant';
+                const interviewDate = recipient.interviewDate || 'To be notified separately';
+                const appId = recipient.applicationId || '';
+                const area = recipient.researchArea || '';
+                const dept = recipient.department || '';
+
+                const substitute = (text) => {
+                    if (!text) return '';
+                    return text
+                        .replace(/{{name}}/gi, name)
+                        .replace(/{{interviewDate}}/gi, interviewDate)
+                        .replace(/{{applicationId}}/gi, appId)
+                        .replace(/{{researchArea}}/gi, area)
+                        .replace(/{{department}}/gi, dept)
+                        .replace(/{{year}}/gi, year);
+                };
+
+                let personalizedHtml = substitute(html);
+                let personalizedSubject = substitute(subject);
                 let plainText = personalizedHtml.replace(/<[^>]*>?/gm, '');
 
                 await emailUtil.sendEmail({
                     email: recipient.email,
-                    subject: subject,
+                    subject: personalizedSubject,
                     message: plainText,
                     html: personalizedHtml
                 });

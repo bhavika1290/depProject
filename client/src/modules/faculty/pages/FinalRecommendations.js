@@ -125,7 +125,7 @@ export default function FinalRecommendations() {
     // Added Score Change handler since it's present in the table
     const handleScoreChange = (id, newScore) => {
         if (hasSubmitted) return;
-        setCandidates(prev => prev.map(c => c.id === id ? { ...c, interviewScore: newScore } : c));
+        setCandidates(prev => prev.map(c => c.id === id ? { ...c, interviewScore: newScore === '' ? 0 : parseFloat(newScore) } : c));
     };
 
     const attemptSubmit = () => {
@@ -139,28 +139,43 @@ export default function FinalRecommendations() {
     const commitSubmission = async () => {
         setIsConfirmOpen(false);
         try {
-            // In a real app we'd likely have a bulk update endpoint,
-            // but for now we'll simulate it with individual updates for robustness.
+            setLoading(true);
             const updates = candidates.map(c => {
-                // Map local status (Recommended/Rejected/Waitlisted) to backend 'result'
-                const finalResult = c.status === 'Recommended' ? 'Selected' : c.status;
-                const finalStatus = c.status === 'Recommended' ? 'Accepted' : c.status;
+                // Map local status (Recommended/Rejected/Waitlisted) to backend 'result' and 'status'
+                let finalResult = c.status;
+                let finalStatus = c.status;
+
+                if (c.status === 'Recommended') {
+                    finalResult = 'Selected';
+                    finalStatus = 'Accepted';
+                }
+
                 return api.put(`/applications/${c._id}/status`, {
                     result: finalResult,
                     status: finalStatus,
+                    interviewStatus: 'Completed',
                     interviewScore: c.interviewScore,
                     admissionRank: c.rank || undefined,
                     facultyRemarks: c.remarks
                 });
             });
 
-            await Promise.all(updates);
+            const results = await Promise.allSettled(updates);
+            const rejected = results.filter(r => r.status === 'rejected');
+
+            if (rejected.length > 0) {
+                console.error('Some updates failed:', rejected);
+                toast.error(`Failed to update ${rejected.length} candidates. Please try again.`);
+                return;
+            }
 
             setHasSubmitted(true);
             toast.success('Final Recommendations successfully submitted to the Department Committee!');
         } catch (err) {
             console.error('Final submission failed', err);
             toast.error('Failed to submit final recommendations.');
+        } finally {
+            setLoading(false);
         }
     };
 
