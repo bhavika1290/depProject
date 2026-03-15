@@ -1,76 +1,62 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import './ShortlistedCandidates.css'; // Will create this
-
-// Dummy candidates strictly for the Shortlisted phase
-const initialShortlisted = [
-    {
-        id: 'APP2026-002',
-        name: 'Sneha Patel',
-        email: 'patel.s@example.com',
-        phone: '+91 8765432109',
-        category: 'OBC',
-        mscCgpa: 9.1,
-        bscCgpa: 8.8,
-        gateScore: 720,
-        csirNetQualified: 'Yes',
-        nbhmQualified: 'No',
-        researchArea: 'Topology',
-        researchExperience: 12,
-        universityRanking: 25,
-        hasPublications: 'Yes',
-        interviewStatus: 'Scheduled',
-        interviewDate: '2026-03-20T10:00',
-        university: 'IIT Bombay',
-        sop: 'Masters thesis focused on Knot invariants.',
-        documents: [{ name: 'SOP.pdf', type: 'SOP' }, { name: 'Gate_Scorecard.pdf', type: 'Scorecard' }]
-    },
-    {
-        id: 'APP2026-004',
-        name: 'Priya Mehta',
-        email: 'p.mehta99@example.com',
-        phone: '+91 6543210987',
-        category: 'General',
-        mscCgpa: 8.6,
-        bscCgpa: 8.3,
-        gateScore: 610,
-        csirNetQualified: 'No',
-        nbhmQualified: 'Yes',
-        researchArea: 'Probability Theory',
-        researchExperience: 6,
-        universityRanking: 5,
-        hasPublications: 'Yes',
-        interviewStatus: 'Pending Scheduling',
-        interviewDate: null,
-        university: 'IISER Pune',
-        sop: 'Stochastic Processes in Financial Markets.',
-        documents: [{ name: 'SOP.pdf', type: 'SOP' }]
-    },
-    {
-        id: 'APP2026-008',
-        name: 'Rahul Gupta',
-        email: 'rahul.g@example.com',
-        phone: '+91 9111222333',
-        category: 'General',
-        mscCgpa: 9.3,
-        bscCgpa: 9.0,
-        gateScore: 780,
-        csirNetQualified: 'Yes (JRF)',
-        nbhmQualified: 'Yes',
-        researchArea: 'Algebra',
-        researchExperience: 24,
-        universityRanking: 2,
-        hasPublications: 'Yes',
-        interviewStatus: 'Selected',
-        interviewDate: '2026-03-15T14:30',
-        university: 'TIFR Mumbai',
-        sop: 'Interested in Algebraic K-theory...',
-        documents: [{ name: 'CV_Rahul.pdf', type: 'Resume' }]
-    }
-];
+import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/apiCore';
+import './ShortlistedCandidates.css';
 
 export default function ShortlistedCandidates() {
-    const [candidates, setCandidates] = useState(initialShortlisted);
+    const { currentUser } = useAuth();
+    const [candidates, setCandidates] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch live shortlisted candidates
+    useEffect(() => {
+        const fetchShortlisted = async () => {
+            if (!currentUser) return;
+            try {
+                setLoading(true);
+                // Status is hardcoded to 'Shortlisted' for this view
+                const res = await api.get(`/applications?facultyId=${currentUser.id}&status=Shortlisted`);
+                const data = res.data.data;
+
+                const mapped = data.map(app => {
+                    const gateExam = app.qualifyingExams?.find(e => e.examName === 'GATE');
+                    const netExam = app.qualifyingExams?.find(e => e.examName === 'CSIR-NET' || e.examName === 'UGC-NET');
+                    const nbhmExam = app.qualifyingExams?.find(e => e.examName === 'NBHM');
+
+                    return {
+                        _id: app._id,
+                        id: app.applicationId || 'N/A',
+                        name: app.personalDetails?.fullName || app.userId?.name || 'N/A',
+                        email: app.userId?.email || 'N/A',
+                        phone: app.communicationDetails?.phone || 'N/A',
+                        category: app.personalDetails?.category || 'General',
+                        mscCgpa: parseFloat(app.educationalDetails?.pg?.cgpa) || 0,
+                        bscCgpa: parseFloat(app.educationalDetails?.ug?.cgpa) || 0,
+                        gateScore: parseInt(gateExam?.score) || 0,
+                        csirNetQualified: netExam ? 'Yes' : 'No',
+                        nbhmQualified: nbhmExam ? 'Yes' : 'No',
+                        researchArea: app.offeringId?.specialization || 'Not Specified',
+                        researchExperience: 0, // Simplified aggregator if needed later
+                        universityRanking: 0, 
+                        hasPublications: app.publications?.length > 0 ? 'Yes' : 'No',
+                        interviewStatus: app.interviewStatus || 'Pending Scheduling',
+                        interviewDate: app.interviewDate || null,
+                        university: app.educationalDetails?.pg?.college || 'Not Specified',
+                        sop: app.generalApplicationDetails?.sop || 'N/A',
+                        documents: (app.documents?.other || []).map((doc, i) => ({ name: `Doc_${i+1}.pdf`, type: 'Other' }))
+                    };
+                });
+                setCandidates(mapped);
+            } catch (err) {
+                console.error('Failed to fetch shortlisted candidates', err);
+                toast.error('Failed to load live data.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchShortlisted();
+    }, [currentUser]);
     
     // UI State
     const [searchTerm, setSearchTerm] = useState('');
@@ -127,17 +113,34 @@ export default function ShortlistedCandidates() {
     };
 
     // Actions
-    const handleRemove = (id) => {
+    const handleRemove = async (appId) => {
+        const candidate = candidates.find(c => c.id === appId);
+        if(!candidate || !candidate._id) return;
+
         if(window.confirm('Are you sure you want to remove this candidate from the Shortlist? They will be demoted back to Applied status.')) {
-            setCandidates(prev => prev.filter(c => c.id !== id));
-            toast.info(`Candidate ${id} removed from shortlist.`);
+            try {
+                // Change status back to 'Submitted'
+                await api.put(`/applications/${candidate._id}/status`, { status: 'Submitted' });
+                setCandidates(prev => prev.filter(c => c.id !== appId));
+                toast.info(`Candidate ${appId} removed from shortlist.`);
+            } catch (err) {
+                toast.error('Failed to remove candidate.');
+            }
         }
     };
 
-    const handleUpdateStatus = (id, newStatus) => {
-        setCandidates(prev => prev.map(c => c.id === id ? { ...c, interviewStatus: newStatus } : c));
-        let type = newStatus === 'Selected' ? toast.success : newStatus === 'Rejected' ? toast.error : toast.info;
-        type(`Candidate marked as ${newStatus}.`);
+    const handleUpdateStatus = async (appId, newStatus) => {
+        const candidate = candidates.find(c => c.id === appId);
+        if(!candidate || !candidate._id) return;
+
+        try {
+            await api.put(`/applications/${candidate._id}/status`, { interviewStatus: newStatus });
+            setCandidates(prev => prev.map(c => c.id === appId ? { ...c, interviewStatus: newStatus } : c));
+            let type = newStatus === 'Selected' ? toast.success : newStatus === 'Rejected' ? toast.error : toast.info;
+            type(`Candidate marked as ${newStatus}.`);
+        } catch (err) {
+            toast.error('Failed to update status.');
+        }
     };
 
     const openScheduleModal = (candidate) => {
@@ -147,7 +150,7 @@ export default function ShortlistedCandidates() {
         setIsScheduleModalOpen(true);
     };
 
-    const handleScheduleSubmit = (e) => {
+    const handleScheduleSubmit = async (e) => {
         e.preventDefault();
         if(!scheduleDate || !scheduleTime) {
             toast.error('Date and time are required.');
@@ -156,14 +159,23 @@ export default function ShortlistedCandidates() {
         
         const datetime = `${scheduleDate}T${scheduleTime}`;
         
-        setCandidates(prev => prev.map(c => 
-            c.id === candidateToSchedule.id 
-                ? { ...c, interviewStatus: 'Scheduled', interviewDate: datetime } 
-                : c
-        ));
-        
-        toast.success(`Interview scheduled for ${candidateToSchedule.name}`);
-        setIsScheduleModalOpen(false);
+        try {
+            await api.put(`/applications/${candidateToSchedule._id}/status`, { 
+                interviewStatus: 'Scheduled', 
+                interviewDate: datetime 
+            });
+
+            setCandidates(prev => prev.map(c => 
+                c.id === candidateToSchedule.id 
+                    ? { ...c, interviewStatus: 'Scheduled', interviewDate: datetime } 
+                    : c
+            ));
+            
+            toast.success(`Interview scheduled for ${candidateToSchedule.name}`);
+            setIsScheduleModalOpen(false);
+        } catch (err) {
+            toast.error('Failed to schedule interview.');
+        }
     };
 
     const handleViewProfile = (candidate) => {
@@ -177,6 +189,16 @@ export default function ShortlistedCandidates() {
         const d = new Date(isoString);
         return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
     };
+
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#64748b' }}>
+                <div className="loading-spinner" style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '15px' }}></div>
+                <p>Loading your shortlisted candidates...</p>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="shortlisted-container">

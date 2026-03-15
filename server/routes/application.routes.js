@@ -23,9 +23,7 @@ router.get('/:id', protect, applicationController.getApplicationById);
 router.get('/', protect, authorize('admin', 'faculty', 'superadmin'), applicationController.getAllApplications);
 router.put('/:id', protect, authorize('admin', 'superadmin'), applicationController.updateApplication);
 router.delete('/:id', protect, authorize('admin', 'superadmin'), applicationController.deleteApplication);
-router.put('/:id/status', protect, authorize('admin', 'superadmin'), applicationController.updateApplicationStatus);
-
-// Export applications
-router.get('/export/:cycleId/:offeringId', protect, authorize('admin', 'superadmin'), applicationController.exportApplications);
+router.put('/:id/status', protect, authorize('admin', 'faculty', 'superadmin'), applicationController.updateApplicationStatus);
+router.get('/export/:cycleId/:offeringId', protect, authorize('admin', 'faculty', 'superadmin'), applicationController.exportApplications);
 
 module.exports = router;

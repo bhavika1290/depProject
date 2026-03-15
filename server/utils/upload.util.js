@@ -28,23 +28,51 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  // Allowed file types
+  // Allowed file types mapping
   const allowedTypes = {
-    image: /jpeg|jpg|png|gif/,
-    document: /pdf|doc|docx/,
-    excel: /xlsx|xls|csv/,
-    all: /jpeg|jpg|png|gif|pdf|doc|docx|xlsx|xls|csv/
+    image: {
+      regex: /jpeg|jpg|png|gif/,
+      exts: ['.jpg', '.jpeg', '.png', '.gif'],
+      mimetypes: ['image/jpeg', 'image/png', 'image/gif']
+    },
+    document: {
+      regex: /pdf|doc|docx/,
+      exts: ['.pdf', '.doc', '.docx'],
+      mimetypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/x-pdf']
+    },
+    excel: {
+      regex: /xlsx|xls|csv/,
+      exts: ['.xlsx', '.xls', '.csv'],
+      mimetypes: ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv']
+    }
   };
 
-  const extname = allowedTypes[req.filterType || 'all'].test(
-    path.extname(file.originalname).toLowerCase()
-  );
-  const mimetype = allowedTypes[req.filterType || 'all'].test(file.mimetype);
+  const filterType = req.filterType || 'all';
+  const fileExt = path.extname(file.originalname).toLowerCase();
+  const fileMime = file.mimetype.toLowerCase();
 
-  if (mimetype && extname) {
+  let isAllowed = false;
+
+  if (filterType === 'all') {
+    // Check against all categories
+    isAllowed = Object.values(allowedTypes).some(type => 
+      type.exts.includes(fileExt) || type.mimetypes.includes(fileMime) || type.regex.test(fileMime)
+    );
+  } else if (allowedTypes[filterType]) {
+    const type = allowedTypes[filterType];
+    isAllowed = type.exts.includes(fileExt) || type.mimetypes.includes(fileMime) || type.regex.test(fileMime);
+  }
+
+  // Final fallback: if it's a generic stream but has a valid extension, allow it
+  if (!isAllowed && fileMime === 'application/octet-stream') {
+    const allExts = Object.values(allowedTypes).flatMap(t => t.exts);
+    if (allExts.includes(fileExt)) isAllowed = true;
+  }
+
+  if (isAllowed) {
     return cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only images, PDFs, and documents are allowed.'));
+    cb(new Error(`Invalid file type (${fileExt}, ${fileMime}). Please upload images, PDFs, or documents.`));
   }
 };
 

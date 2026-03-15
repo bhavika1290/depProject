@@ -1,55 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/apiCore';
 import './FilterSortApplicants.css';
-
-// Extended Dummy Data for strict screening
-const initialApplicants = [
-    {
-        id: 'APP2026-001', name: 'Ravi Kumar', email: 'ravi.k@example.com', phone: '+91 9876543210',
-        category: 'General', mscCgpa: 8.9, bscCgpa: 8.5, gateScore: 650, 
-        csirNetQualified: 'Yes', nbhmQualified: 'Yes', researchArea: 'Algebra', 
-        researchExperience: 18, universityRanking: 15, hasPublications: 'Yes',
-        status: 'Applied', gateYear: 2026, university: 'Delhi University', graduationYear: 2025,
-        sop: 'Deeply interested in Group Theory. Proficient in GAP and MAGMA.',
-        documents: [{ name: 'SOP.pdf', type: 'SOP' }, { name: 'MSc_Transcript.pdf', type: 'Transcript' }]
-    },
-    {
-        id: 'APP2026-002', name: 'Sneha Patel', email: 'patel.s@example.com', phone: '+91 8765432109',
-        category: 'OBC', mscCgpa: 9.1, bscCgpa: 8.8, gateScore: 720, 
-        csirNetQualified: 'Yes', nbhmQualified: 'No', researchArea: 'Topology', 
-        researchExperience: 12, universityRanking: 25, hasPublications: 'Yes',
-        status: 'Applied', gateYear: 2026, university: 'IIT Bombay', graduationYear: 2025,
-        sop: 'Masters thesis focused on Knot invariants. Published 2 papers.',
-        documents: [{ name: 'SOP.pdf', type: 'SOP' }, { name: 'Gate_Scorecard.pdf', type: 'Scorecard' }]
-    },
-    {
-        id: 'APP2026-003', name: 'Amit Singh', email: 'amit.math@example.com', phone: '+91 7654321098',
-        category: 'SC', mscCgpa: 8.2, bscCgpa: 7.9, gateScore: 580, 
-        csirNetQualified: 'No', nbhmQualified: 'No', researchArea: 'Numerical Analysis', 
-        researchExperience: 0, universityRanking: 18, hasPublications: 'No',
-        status: 'Applied', gateYear: 2025, university: 'Panjab University', graduationYear: 2025,
-        sop: 'Eager to work on computational scaling of nonlinear PDEs. Strong programming skills.',
-        documents: [{ name: 'SOP.pdf', type: 'SOP' }, { name: 'MSc_Transcript.pdf', type: 'Transcript' }]
-    },
-    {
-        id: 'APP2026-004', name: 'Priya Mehta', email: 'p.mehta99@example.com', phone: '+91 6543210987',
-        category: 'General', mscCgpa: 8.6, bscCgpa: 8.3, gateScore: 610, 
-        csirNetQualified: 'No', nbhmQualified: 'Yes', researchArea: 'Probability Theory', 
-        researchExperience: 6, universityRanking: 5, hasPublications: 'Yes',
-        status: 'Applied', gateYear: 2026, university: 'IISER Pune', graduationYear: 2025,
-        sop: 'Looking to dive deep into Stochastic Processes in Financial Markets.',
-        documents: [{ name: 'SOP.pdf', type: 'SOP' }]
-    },
-    {
-        id: 'APP2026-005', name: 'Vikram Sharma', email: 'vikram.s@example.com', phone: '+91 5432109876',
-        category: 'EWS', mscCgpa: 7.5, bscCgpa: 7.2, gateScore: 490, 
-        csirNetQualified: 'No', nbhmQualified: 'No', researchArea: 'Differential Geometry', 
-        researchExperience: 0, universityRanking: 45, hasPublications: 'No',
-        status: 'Applied', gateYear: 2024, university: 'NIT Kurukshetra', graduationYear: 2024,
-        sop: 'Interested in Riemannian manifolds.',
-        documents: [{ name: 'SOP.pdf', type: 'SOP' }]
-    }
-];
 
 // Initial Filter States
 const defaultFilters = {
@@ -67,7 +20,76 @@ const defaultFilters = {
 };
 
 export default function FilterSortApplicants() {
-    const [applicants, setApplicants] = useState(initialApplicants);
+    const { currentUser } = useAuth();
+    const [applicants, setApplicants] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch real applications on mount
+    useEffect(() => {
+        const fetchApplications = async () => {
+            if (!currentUser) return;
+            try {
+                setLoading(true);
+                const res = await api.get(`/applications?facultyId=${currentUser.id}`);
+                const data = res.data.data;
+                
+                // Map API payload to the strict screening structure the UI expects
+                const mappedApplicants = data.map(app => {
+                    const gateExam = app.qualifyingExams?.find(e => e.examName === 'GATE');
+                    const netExam = app.qualifyingExams?.find(e => e.examName === 'CSIR-NET' || e.examName === 'UGC-NET');
+                    const nbhmExam = app.qualifyingExams?.find(e => e.examName === 'NBHM');
+
+                    // Calculate research experience in months
+                    let totalMonths = 0;
+                    app.experienceDetails?.forEach(exp => {
+                        if (exp.startDate && exp.endDate) {
+                            const start = new Date(exp.startDate);
+                            const end = new Date(exp.endDate);
+                            const diff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+                            if (diff > 0) totalMonths += diff;
+                        }
+                    });
+
+                    // Best effort mapping to documents visually
+                    const mappedDocs = [];
+                    if (app.documents?.marksheets) mappedDocs.push({ name: 'Marksheets.zip', type: 'Transcript' });
+                    if (app.documents?.certificates) mappedDocs.push({ name: 'Certificates.zip', type: 'Other' });
+                    app.documents?.other?.forEach((doc, i) => mappedDocs.push({ name: `Other_Doc_${i+1}.pdf`, type: 'Other' }));
+
+                    return {
+                        _id: app._id,
+                        id: app.applicationId || 'N/A',
+                        name: app.personalDetails?.fullName || app.userId?.name || 'N/A',
+                        email: app.userId?.email || 'No Email',
+                        phone: app.communicationDetails?.phone || 'Not Provided',
+                        category: app.personalDetails?.category || 'General',
+                        mscCgpa: parseFloat(app.educationalDetails?.pg?.cgpa) || 0,
+                        bscCgpa: parseFloat(app.educationalDetails?.ug?.cgpa) || 0,
+                        gateScore: parseInt(gateExam?.score) || 0,
+                        csirNetQualified: netExam ? 'Yes' : 'No',
+                        nbhmQualified: nbhmExam ? 'Yes' : 'No',
+                        researchArea: app.offeringId?.specialization || 'Not Specified',
+                        researchExperience: totalMonths,
+                        universityRanking: 50, // Default fallback
+                        hasPublications: app.publications?.length > 0 ? 'Yes' : 'No',
+                        status: app.status || 'Draft',
+                        sop: app.generalApplicationDetails?.sop || app.generalApplicationDetails?.specificAreaOfResearch || '',
+                        keywords: app.generalApplicationDetails?.keywords || [],
+                        university: app.educationalDetails?.pg?.university || app.educationalDetails?.ug?.university || 'N/A',
+                        documents: mappedDocs
+                    };
+                });
+                
+                setApplicants(mappedApplicants);
+            } catch (err) {
+                console.error('Failed to fetch applications', err);
+                toast.error('Failed to load real applicants for screening');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchApplications();
+    }, [currentUser]);
     
     // Draft filters are bound to inputs. They don't affect table until "Apply" is clicked.
     const [draftFilters, setDraftFilters] = useState(defaultFilters);
@@ -116,9 +138,12 @@ export default function FilterSortApplicants() {
         // Add points for matching custom keywords
         if (filters.customKeywords && filters.customKeywords.length > 0) {
             const sopText = (app.sop || '').toLowerCase();
+            const studentKeywords = (app.keywords || []).map(k => k.toLowerCase());
+            
             let matchCount = 0;
             filters.customKeywords.forEach(kw => {
-                if (sopText.includes(kw.toLowerCase())) matchCount++;
+                const searchKw = kw.toLowerCase();
+                if (sopText.includes(searchKw) || studentKeywords.includes(searchKw)) matchCount++;
             });
             score += (matchCount / filters.customKeywords.length) * 15; // up to 15 bonus points
         }
@@ -151,10 +176,15 @@ export default function FilterSortApplicants() {
             if (app.universityRanking > activeFilters.maxUniversityRanking) return false;
             if (activeFilters.hasPublications !== 'All' && app.hasPublications !== activeFilters.hasPublications) return false;
             
-            // Custom Strict Keywords check (Must exist in SOP)
+            // Custom Strict Keywords check (Must exist in SOP or Keywords array)
             if (activeFilters.customKeywords && activeFilters.customKeywords.length > 0) {
                 const sopText = (app.sop || '').toLowerCase();
-                const missingKeyword = activeFilters.customKeywords.find(kw => !sopText.includes(kw.toLowerCase()));
+                const studentKeywords = (app.keywords || []).map(k => k.toLowerCase());
+                
+                const missingKeyword = activeFilters.customKeywords.find(kw => {
+                    const searchKw = kw.toLowerCase();
+                    return !sopText.includes(searchKw) && !studentKeywords.includes(searchKw);
+                });
                 if (missingKeyword) return false;
             }
 
@@ -217,9 +247,19 @@ export default function FilterSortApplicants() {
         setIsModalOpen(true);
     };
 
-    const handleShortlist = (id) => {
-        setApplicants(prev => prev.map(app => app.id === id ? { ...app, status: 'Shortlisted' } : app));
-        toast.success(`Applicant successfully sent to "Shortlisted Candidates".`);
+    const handleShortlist = async (appId) => {
+        // Find the raw _id for the API call
+        const applicantToUpdate = applicants.find(app => app.id === appId);
+        if (!applicantToUpdate || !applicantToUpdate._id) return;
+
+        try {
+            await api.put(`/applications/${applicantToUpdate._id}/status`, { status: 'Shortlisted' });
+            setApplicants(prev => prev.map(app => app.id === appId ? { ...app, status: 'Shortlisted' } : app));
+            toast.success(`Applicant ${appId} successfully sent to "Shortlisted Candidates".`);
+        } catch (error) {
+            console.error('Shortlist failed', error);
+            toast.error('Failed to update status on server');
+        }
     };
 
     // Dropdown population
@@ -248,6 +288,16 @@ export default function FilterSortApplicants() {
             customKeywords: (prev.customKeywords || []).filter(kw => kw !== kwToRemove)
         }));
     };
+
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#64748b' }}>
+                <div className="loading-spinner" style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '15px' }}></div>
+                <p>Loading real applicant data for screening...</p>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="filter-sort-container">

@@ -9,9 +9,9 @@ router.get('/open', offeringController.getOpenOfferings);
 router.get('/:id', offeringController.getOfferingById);
 
 // Admin/Faculty routes
-router.post('/', protect, authorize('admin', 'superadmin'), offeringController.createOffering);
-router.put('/:id', protect, authorize('admin', 'superadmin'), offeringController.updateOffering);
-router.delete('/:id', protect, authorize('admin', 'superadmin'), offeringController.deleteOffering);
-router.put('/:id/publish-results', protect, authorize('admin', 'superadmin'), offeringController.publishResults);
+router.post('/', protect, authorize('admin', 'superadmin', 'faculty'), offeringController.createOffering);
+router.put('/:id', protect, authorize('admin', 'superadmin', 'faculty'), offeringController.updateOffering);
+router.delete('/:id', protect, authorize('admin', 'superadmin', 'faculty'), offeringController.deleteOffering);
+router.put('/:id/publish-results', protect, authorize('admin', 'superadmin', 'faculty'), offeringController.publishResults);
 
 module.exports = router;

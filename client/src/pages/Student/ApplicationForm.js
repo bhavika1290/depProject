@@ -20,6 +20,8 @@ export default function ApplicationForm() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
+    const [requirements, setRequirements] = useState(null);
+    const [profile, setProfile] = useState(null);
 
     const [currentStep, setCurrentStep] = useState(0);
 
@@ -29,7 +31,13 @@ export default function ApplicationForm() {
             interdisciplinaryDepartment: '',
             modeOfApplication: '',
             areaOfResearchPrefs: ['', '', '', ''],
-            specificAreaOfResearch: ''
+            specificAreaOfResearch: '',
+            sop: '',
+            keywords: ''
+        },
+        educationalDetails: {
+            ug: { degree: '', university: '', cgpa: '', year: '' },
+            pg: { degree: '', university: '', cgpa: '', year: '' }
         },
         qualifyingExams: [],
         experienceDetails: [],
@@ -48,8 +56,47 @@ export default function ApplicationForm() {
 
     const fetchOffering = useCallback(async () => {
         try {
-            const res = await api.get(`/offerings/${id}`);
-            setOffering(res.data.data);
+            const [offerRes, profileRes] = await Promise.all([
+                api.get(`/offerings/${id}`),
+                api.get('/users/profile').catch(() => ({ data: { data: null } }))
+            ]);
+
+            const offData = offerRes.data.data;
+            setOffering(offData);
+
+            if (offData.minimumQualification) {
+                try {
+                    const reqs = typeof offData.minimumQualification === 'string' 
+                        ? JSON.parse(offData.minimumQualification) 
+                        : offData.minimumQualification;
+                    setRequirements(reqs);
+                } catch (e) {
+                    console.error('Failed to parse requirements', e);
+                }
+            }
+
+            const profData = profileRes.data.data;
+            if (profData) {
+                setProfile(profData);
+                // Pre-fill educational details from profile
+                setFormData(prev => ({
+                    ...prev,
+                    educationalDetails: {
+                        ug: {
+                            degree: profData.educationalDetails?.ugDegree || '',
+                            university: profData.educationalDetails?.ugUniversity || '',
+                            cgpa: profData.educationalDetails?.ugCGPA || '',
+                            year: profData.educationalDetails?.ugYear || ''
+                        },
+                        pg: {
+                            degree: profData.educationalDetails?.pgDegree || '',
+                            university: profData.educationalDetails?.pgUniversity || '',
+                            cgpa: profData.educationalDetails?.pgCGPA || '',
+                            year: profData.educationalDetails?.pgYear || ''
+                        }
+                    }
+                }));
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to fetch offering');
         } finally {
@@ -116,7 +163,12 @@ export default function ApplicationForm() {
             }
 
             // Stringify complex objects for FormData
-            submitData.append('generalApplicationDetails', JSON.stringify(formData.generalApplicationDetails));
+            const generalDetails = {
+                ...formData.generalApplicationDetails,
+                keywords: formData.generalApplicationDetails.keywords ? formData.generalApplicationDetails.keywords.split(',').map(k => k.trim()) : []
+            };
+            submitData.append('generalApplicationDetails', JSON.stringify(generalDetails));
+            submitData.append('educationalDetails', JSON.stringify(formData.educationalDetails));
             submitData.append('qualifyingExams', JSON.stringify(formData.qualifyingExams));
             submitData.append('experienceDetails', JSON.stringify(formData.experienceDetails));
             submitData.append('publications', JSON.stringify(formData.publications));
@@ -142,9 +194,85 @@ export default function ApplicationForm() {
 
     // --- RENDER STEPS ---
     
-    const renderStep1General = () => (
-        <div className="wizard-step-card animate-fade-in">
-            <h3>General Details</h3>
+    const renderStep1General = () => {
+        const meetsMsc = !requirements?.minMscCgpa || Number(formData.educationalDetails.pg?.cgpa) >= Number(requirements.minMscCgpa);
+        const meetsBsc = !requirements?.minBscCgpa || Number(formData.educationalDetails.ug?.cgpa) >= Number(requirements.minBscCgpa);
+        
+        return (
+            <div className="wizard-step-card animate-fade-in">
+                {/* Faculty Requirements Summary */}
+                {requirements && (
+                    <div className="requirements-summary-card">
+                        <div className="req-header">
+                            <h4>Faculty Screening Criteria</h4>
+                            <span className="req-badge">Opening Specific</span>
+                        </div>
+                        <div className="req-grid">
+                            {requirements.minMscCgpa && (
+                                <div className={`req-item ${meetsMsc ? 'ok' : 'warn'}`}>
+                                    <span className="req-label">Min MSc CGPA:</span>
+                                    <span className="req-val">{requirements.minMscCgpa}</span>
+                                </div>
+                            )}
+                            {requirements.minBscCgpa && (
+                                <div className={`req-item ${meetsBsc ? 'ok' : 'warn'}`}>
+                                    <span className="req-label">Min BSc CGPA:</span>
+                                    <span className="req-val">{requirements.minBscCgpa}</span>
+                                </div>
+                            )}
+                            {requirements.gateScore && (
+                                <div className="req-item info">
+                                    <span className="req-label">Min GATE Score:</span>
+                                    <span className="req-val">{requirements.gateScore}</span>
+                                </div>
+                            )}
+                            {requirements.minResearchExperience && (
+                                <div className="req-item info">
+                                    <span className="req-label">Min Experience:</span>
+                                    <span className="req-val">{requirements.minResearchExperience} Months</span>
+                                </div>
+                            )}
+                        </div>
+                        {!meetsMsc || !meetsBsc ? (
+                            <div className="req-warning">
+                                ⚠️ Your current profile scores appear to be below the requested minimum. Please ensure your details are accurate below.
+                            </div>
+                        ) : (
+                            <div className="req-success">
+                                ✓ You appear to meet the primary academic criteria for this opening.
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <h3>1. Academic Eligibility Verification</h3>
+                <p className="step-intro">Since faculty use these scores for initial screening, please confirm your CGPA details for this application.</p>
+                <div className="form-grid" style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '30px' }}>
+                    <div className="form-group">
+                        <label>Post-Graduate (M.Sc/M.Tech) CGPA *</label>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            required 
+                            value={formData.educationalDetails.pg?.cgpa} 
+                            onChange={(e) => handleNestedChange('educationalDetails', 'pg', { ...formData.educationalDetails.pg, cgpa: e.target.value })}
+                            className={!meetsMsc ? 'input-error' : ''}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Undergraduate (B.Sc/B.Tech) CGPA *</label>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            required 
+                            value={formData.educationalDetails.ug?.cgpa} 
+                            onChange={(e) => handleNestedChange('educationalDetails', 'ug', { ...formData.educationalDetails.ug, cgpa: e.target.value })}
+                            className={!meetsBsc ? 'input-error' : ''}
+                        />
+                    </div>
+                </div>
+
+                <h3>2. General Details</h3>
             <div className="form-grid">
                 <div className="form-group">
                     <label>Department *</label>
@@ -217,60 +345,108 @@ export default function ApplicationForm() {
             <div className="form-group" style={{ marginTop: '20px' }}>
                 <label>Specific area of research (if known):</label>
                 <textarea 
-                    rows="3" 
+                    rows="2" 
                     value={formData.generalApplicationDetails.specificAreaOfResearch}
                     onChange={(e) => handleNestedChange('generalApplicationDetails', 'specificAreaOfResearch', e.target.value)}
                 />
             </div>
-        </div>
-    );
 
-    const renderStep2Exams = () => (
-        <div className="wizard-step-card animate-fade-in">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3>Qualifying Exam Details</h3>
-                <button type="button" className="btn-secondary" onClick={() => addArrayItem('qualifyingExams', { examName:'', subject:'', yearOfPassing:'', score:'', rank:'', validUpTo:'' })}>+ Add Exam</button>
+            <div className="form-group" style={{ marginTop: '20px' }}>
+                <label>Statement of Purpose (SOP) / Cover Letter: *</label>
+                <textarea 
+                    rows="4" 
+                    required
+                    placeholder="Briefly describe your research interests, background, and motivation..."
+                    value={formData.generalApplicationDetails.sop}
+                    onChange={(e) => handleNestedChange('generalApplicationDetails', 'sop', e.target.value)}
+                />
             </div>
-            
-            {formData.qualifyingExams.length === 0 ? (
-                <div style={{ padding: '30px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b' }}>
-                    No qualifying exams added yet. Click "+ Add Exam" if applicable.
+
+            <div className="form-group" style={{ marginTop: '20px' }}>
+                <label>Keywords / Tags (Comma separated): *</label>
+                <input 
+                    type="text" 
+                    required
+                    placeholder="e.g. Python, Topology, Data Analysis"
+                    value={formData.generalApplicationDetails.keywords}
+                    onChange={(e) => handleNestedChange('generalApplicationDetails', 'keywords', e.target.value)}
+                />
+            </div>
+        </div>
+        );
+    };
+
+    const renderStep2Exams = () => {
+        const hasGateReq = !!requirements?.gateScore;
+        const hasNetReq = !!requirements?.csirNet;
+        const hasNbhmReq = !!requirements?.nbhm;
+
+        return (
+            <div className="wizard-step-card animate-fade-in">
+                <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ marginTop: 0, marginBottom: '15px' }}>Mandatory Screening Exams</h4>
+                    <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '15px' }}>Faculty for this opening prioritize the following exams for initial screening.</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                        <button type="button" className={`btn-secondary ${hasGateReq ? 'btn-highlight' : ''}`} onClick={() => addArrayItem('qualifyingExams', { examName:'GATE', subject:'Mathematics', yearOfPassing:'', score:'', rank:'', validUpTo:'' })}>
+                            {hasGateReq && <span className="mini-badge">Required</span>} + Add GATE
+                        </button>
+                        <button type="button" className={`btn-secondary ${hasNetReq ? 'btn-highlight' : ''}`} onClick={() => addArrayItem('qualifyingExams', { examName:'CSIR-NET', subject:'Mathematical Sciences', yearOfPassing:'', score:'', rank:'', validUpTo:'' })}>
+                            {hasNetReq && <span className="mini-badge">Required</span>} + Add CSIR-NET
+                        </button>
+                        <button type="button" className={`btn-secondary ${hasNbhmReq ? 'btn-highlight' : ''}`} onClick={() => addArrayItem('qualifyingExams', { examName:'NBHM', subject:'Mathematics', yearOfPassing:'', score:'', rank:'', validUpTo:'' })}>
+                            {hasNbhmReq && <span className="mini-badge">Required</span>} + Add NBHM
+                        </button>
+                    </div>
                 </div>
-            ) : (
-                formData.qualifyingExams.map((exam, i) => (
-                    <div key={i} style={{ border: '1px solid #e2e8f0', padding: '20px', borderRadius: '8px', marginBottom: '20px', position: 'relative' }}>
-                        <button type="button" onClick={() => removeArrayItem('qualifyingExams', i)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}>✕ Remove</button>
-                        <div className="form-grid">
-                            <div className="form-group">
-                                <label>Exam Name (GATE/NET/etc)</label>
-                                <input type="text" value={exam.examName} onChange={(e) => handleArrayChange('qualifyingExams', i, 'examName', e.target.value)} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Subject</label>
-                                <input type="text" value={exam.subject} onChange={(e) => handleArrayChange('qualifyingExams', i, 'subject', e.target.value)} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Year of Passing</label>
-                                <input type="number" value={exam.yearOfPassing} onChange={(e) => handleArrayChange('qualifyingExams', i, 'yearOfPassing', e.target.value)} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Score/Percentile</label>
-                                <input type="text" value={exam.score} onChange={(e) => handleArrayChange('qualifyingExams', i, 'score', e.target.value)} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Rank</label>
-                                <input type="text" value={exam.rank} onChange={(e) => handleArrayChange('qualifyingExams', i, 'rank', e.target.value)} />
-                            </div>
-                            <div className="form-group">
-                                <label>Valid Up To</label>
-                                <input type="date" value={exam.validUpTo} onChange={(e) => handleArrayChange('qualifyingExams', i, 'validUpTo', e.target.value)} />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div className="section-title-wrap">
+                        <h3>Qualifying Exams</h3>
+                        <p className="sub-instruction">Provide details for all relevant national level exams.</p>
+                    </div>
+                    <button type="button" className="btn-secondary" onClick={() => addArrayItem('qualifyingExams', { examName:'', subject:'', yearOfPassing:'', score:'', rank:'', validUpTo:'' })}>+ Add Other Exam</button>
+                </div>
+                
+                {formData.qualifyingExams.length === 0 ? (
+                    <div className="empty-array-state">
+                        No qualifying exams added yet. Click a button above to add details.
+                    </div>
+                ) : (
+                    formData.qualifyingExams.map((exam, i) => (
+                        <div key={i} className={`exam-card ${['GATE', 'CSIR-NET', 'NBHM'].includes(String(exam.examName).toUpperCase()) ? 'priority-card' : ''}`}>
+                            <button type="button" onClick={() => removeArrayItem('qualifyingExams', i)} className="remove-item-btn">✕ Remove</button>
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Exam Name (GATE/NET/etc)</label>
+                                    <input type="text" value={exam.examName} onChange={(e) => handleArrayChange('qualifyingExams', i, 'examName', e.target.value)} required />
+                                </div>
+                                <div className="form-group">
+                                    <label>Subject</label>
+                                    <input type="text" value={exam.subject} onChange={(e) => handleArrayChange('qualifyingExams', i, 'subject', e.target.value)} required />
+                                </div>
+                                <div className="form-group">
+                                    <label>Year of Passing</label>
+                                    <input type="number" value={exam.yearOfPassing} onChange={(e) => handleArrayChange('qualifyingExams', i, 'yearOfPassing', e.target.value)} required />
+                                </div>
+                                <div className="form-group">
+                                    <label>Score/Percentile</label>
+                                    <input type="text" value={exam.score} onChange={(e) => handleArrayChange('qualifyingExams', i, 'score', e.target.value)} required />
+                                </div>
+                                <div className="form-group">
+                                    <label>Rank</label>
+                                    <input type="text" value={exam.rank} onChange={(e) => handleArrayChange('qualifyingExams', i, 'rank', e.target.value)} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Valid Up To</label>
+                                    <input type="date" value={exam.validUpTo} onChange={(e) => handleArrayChange('qualifyingExams', i, 'validUpTo', e.target.value)} />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))
-            )}
-        </div>
-    );
+                    ))
+                )}
+            </div>
+        );
+    };
 
     const renderStep3Experience = () => (
         <div className="wizard-step-card animate-fade-in">

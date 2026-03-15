@@ -1,131 +1,16 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import './MyOpenings.css';
 
-// Dummy data for initial visualization
-const initialOpenings = [
-    {
-        id: 'OPN-2026-001',
-        researchArea: 'Algebra',
-        projectTitle: 'Representations of Finite Groups',
-        department: 'Mathematics',
-        positions: 2,
-        fundingType: 'Institute Fellowship',
-        deadline: '2026-04-15',
-        status: 'Active',
-        applicantsCount: 45,
-        eligibility: {
-            minMscCgpa: 7.5,
-            minBscCgpa: 7.0,
-            gateRequired: true,
-            csirNetRequired: false,
-            nbhmRequired: true
-        },
-        categories: ['General', 'OBC'],
-        experience: 0,
-        descriptionFile: 'algebra_project.pdf',
-        eligibilityFile: 'algebra_eligibility.pdf',
-        keywords: 'Group Theory, Representation Theory'
-    },
-    {
-        id: 'OPN-2026-002',
-        researchArea: 'Topology',
-        projectTitle: 'Algebraic Topology and Knot Theory',
-        department: 'Mathematics',
-        positions: 1,
-        fundingType: 'Project Funded',
-        deadline: '2026-05-01',
-        status: 'Active',
-        applicantsCount: 12,
-        eligibility: {
-            minMscCgpa: 8.0,
-            minBscCgpa: 7.5,
-            gateRequired: true,
-            csirNetRequired: true,
-            nbhmRequired: false
-        },
-        categories: ['General', 'SC'],
-        experience: 0,
-        descriptionFile: 'topology_project.pdf',
-        eligibilityFile: 'topology_eligibility.pdf',
-        keywords: 'Algebraic Topology, Knot Theory, Manifolds'
-    },
-    {
-        id: 'OPN-2026-003',
-        researchArea: 'Numerical Analysis',
-        projectTitle: 'Numerical Methods for PDEs',
-        department: 'Mathematics',
-        positions: 3,
-        fundingType: 'External Fellowship',
-        deadline: '2026-03-01',
-        status: 'Closed',
-        applicantsCount: 85,
-        eligibility: {
-            minMscCgpa: 7.0,
-            minBscCgpa: 6.5,
-            gateRequired: false,
-            csirNetRequired: true,
-            nbhmRequired: false
-        },
-        categories: ['General', 'OBC', 'EWS'],
-        experience: 6,
-        descriptionFile: 'numerical_pde.pdf',
-        eligibilityFile: 'numerical_eligibility.pdf',
-        keywords: 'PDEs, Finite Elements, Computational Mathematics'
-    },
-    {
-        id: 'OPN-2026-004',
-        researchArea: 'Probability and Statistics',
-        projectTitle: 'Stochastic Processes in Finance',
-        department: 'Mathematics',
-        positions: 2,
-        fundingType: 'Institute Fellowship',
-        deadline: '2026-06-20',
-        status: 'Active',
-        applicantsCount: 30,
-        eligibility: {
-            minMscCgpa: 7.8,
-            minBscCgpa: 7.2,
-            gateRequired: true,
-            csirNetRequired: false,
-            nbhmRequired: false
-        },
-        categories: ['General'],
-        experience: 12,
-        descriptionFile: 'stochastic_finance.pdf',
-        eligibilityFile: 'stochastic_eligibility.pdf',
-        keywords: 'Stochastic Calculus, Financial Modeling, Time Series'
-    },
-    {
-        id: 'OPN-2026-005',
-        researchArea: 'Differential Geometry',
-        projectTitle: 'Geometric Flows and Minimal Surfaces',
-        department: 'Mathematics',
-        positions: 1,
-        fundingType: 'Project Funded',
-        deadline: '2026-07-15',
-        status: 'Active',
-        applicantsCount: 5,
-        eligibility: {
-            minMscCgpa: 8.5,
-            minBscCgpa: 8.0,
-            gateRequired: true,
-            csirNetRequired: true,
-            nbhmRequired: true
-        },
-        categories: ['General', 'ST'],
-        experience: 0,
-        descriptionFile: 'geometric_flows.pdf',
-        eligibilityFile: 'geometric_eligibility.pdf',
-        keywords: 'Riemannian Geometry, Minimal Surfaces, Curvature'
-    }
-];
+import api from '../../../services/apiCore';
+import './MyOpenings.css';
 
 export default function MyOpenings() {
     const navigate = useNavigate();
-    const [openings, setOpenings] = useState(initialOpenings);
+    const [openings, setOpenings] = useState([]);
+    const [loading, setLoading] = useState(true);
     
     // Filtering states
     const [searchTerm, setSearchTerm] = useState('');
@@ -133,11 +18,50 @@ export default function MyOpenings() {
     
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 3;
+    const itemsPerPage = 10;
 
     // Modal state
     const [selectedOpening, setSelectedOpening] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        fetchOpenings();
+    }, []);
+
+    const fetchOpenings = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get('/offerings');
+            if (res.data?.success) {
+                // Ensure consistency in data mapping
+                const mappedData = res.data.data.map(op => {
+                    let eligibility = {};
+                    try {
+                        eligibility = op.minimumQualification ? JSON.parse(op.minimumQualification) : {};
+                    } catch (e) {
+                        console.error('Failed to parse eligibility for opening:', op._id);
+                    }
+                    return {
+                        ...op,
+                        id: op._id, // Map _id to id for UI consistency
+                        projectTitle: op.description || 'PhD Project Opening',
+                        researchArea: op.specialization || 'General',
+                        positions: op.numberOfSeats || 1,
+                        status: op.status ? (op.status.charAt(0).toUpperCase() + op.status.slice(1)) : 'Active', // Normalize status case
+                        applicantsCount: op.applicantsCount || 0,
+                        eligibility: eligibility,
+                        keywords: op.researchAreas ? op.researchAreas.join(', ') : ''
+                    };
+                });
+                setOpenings(mappedData);
+            }
+        } catch (error) {
+            console.error('Failed to fetch openings:', error);
+            toast.error('Failed to load your openings. Please refresh.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Derived State (Filtering and Sorting)
     const filteredOpenings = useMemo(() => {

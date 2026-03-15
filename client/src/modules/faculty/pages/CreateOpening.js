@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
+import React, { useState, useEffect } from 'react';
+import { Formik, Form, Field, ErrorMessage, useFormikContext } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import api from '../../../services/apiCore';
 import './CreateOpening.css';
 
 const RESEARCH_AREAS = [
@@ -23,10 +24,52 @@ const FUNDING_OPTIONS = [
     'Self-Sponsored / Part-Time'
 ];
 
+/**
+ * Helper component to handle validation errors and scroll to them.
+ * This is a child of Formik so it can use useFormikContext.
+ */
+function FormErrorManager() {
+    const { errors, submitCount } = useFormikContext();
+
+    useEffect(() => {
+        if (submitCount > 0 && Object.keys(errors).length > 0) {
+            const firstErrorField = Object.keys(errors)[0];
+            toast.error(`Please fix: ${errors[firstErrorField]}`, { 
+                toastId: 'form-val-err',
+                position: "top-center"
+            });
+            
+            // Scroll to the first error field
+            const element = document.getElementsByName(firstErrorField)[0];
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.focus();
+            }
+        }
+    }, [submitCount, errors]);
+
+    return null;
+}
+
 export default function CreateOpening() {
     const navigate = useNavigate();
     const [projectFile, setProjectFile] = useState(null);
     const [eligibilityFile, setEligibilityFile] = useState(null);
+    const [activeCycle, setActiveCycle] = useState(null);
+
+    useEffect(() => {
+        // Fetch the active admission cycle
+        api.get('/admission-cycles/active')
+            .then(res => {
+                if (res.data?.success && res.data?.data) {
+                    setActiveCycle(res.data.data);
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching active cycle:', err);
+                toast.warning('Warning: No active admission cycle found. You may not be able to publish.');
+            });
+    }, []);
 
     const initialValues = {
         // Section 1: Basic Information
@@ -38,10 +81,11 @@ export default function CreateOpening() {
         applicationDeadline: '',
 
         // Section 2: Eligibility Criteria
-        minCgpa: '',
-        requiredDegree: '',
-        gateRequired: 'No',
-        csirNetRequired: 'No',
+        minMscCgpa: '',
+        minBscCgpa: '',
+        gateScore: '',
+        csirNet: false,
+        nbhm: false,
         allowedCategories: [],
         minResearchExperience: '',
 
@@ -69,21 +113,43 @@ export default function CreateOpening() {
 
     const handleSubmit = async (values, { setSubmitting }) => {
         try {
-            // Here you would normally create FormData to upload files along with JSON data
-            // const formData = new FormData();
-            // Object.keys(values).forEach(key => formData.append(key, values[key]));
-            // if (projectFile) formData.append('projectDescription', projectFile);
-            // if (eligibilityFile) formData.append('eligibilityPdf', eligibilityFile);
+            if (!activeCycle) {
+                toast.error('Cannot create offering without an active admission cycle.');
+                setSubmitting(false);
+                return;
+            }
 
-            console.log('Form Submitted (Publish)', values);
-            if (projectFile) console.log('Project File:', projectFile.name);
-            if (eligibilityFile) console.log('Eligibility File:', eligibilityFile.name);
+            // Map form values to the Offering schema
+            const payload = {
+                admissionCycleId: activeCycle._id,
+                department: values.department,
+                specialization: values.researchArea,
+                offeringType: values.fundingType,
+                deadline: values.applicationDeadline,
+                description: values.projectTitle,
+                numberOfSeats: values.numberOfPositions,
+                researchAreas: values.keywords ? values.keywords.split(',').map(k => k.trim()) : [],
+                minimumQualification: JSON.stringify({
+                    minMscCgpa: values.minMscCgpa,
+                    minBscCgpa: values.minBscCgpa,
+                    gateScore: values.gateScore,
+                    csirNet: values.csirNet,
+                    nbhm: values.nbhm,
+                    allowedCategories: values.allowedCategories,
+                    minResearchExperience: values.minResearchExperience
+                })
+            };
+
+            console.log('Publishing Offering Payload:', payload);
+            
+            // Send API Request
+            await api.post('/offerings', payload);
 
             toast.success('Opening successfully created and published!');
             navigate('/faculty/openings');
         } catch (error) {
             console.error('Submission failed', error);
-            toast.error('Failed to create opening. Please try again.');
+            toast.error(error.response?.data?.message || 'Failed to create opening. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -111,6 +177,7 @@ export default function CreateOpening() {
             >
                 {({ isSubmitting, values }) => (
                     <Form className="create-opening-form">
+                        <FormErrorManager />
                         
                         {/* Section 1: Basic Information */}
                         <section className="form-section">
@@ -137,13 +204,18 @@ export default function CreateOpening() {
                                     <label>Department <span className="required">*</span></label>
                                     <Field as="select" name="department" className="form-input">
                                         <option value="">Select Department</option>
-                                        <option value="Computer Science">Computer Science and Engineering</option>
-                                        <option value="Electrical">Electrical Engineering</option>
-                                        <option value="Mechanical">Mechanical Engineering</option>
-                                        <option value="Civil">Civil Engineering</option>
-                                        <option value="Mathematics">Mathematics</option>
-                                        <option value="Physics">Physics</option>
+                                        <option value="Biomedical Engineering">Biomedical Engineering</option>
+                                        <option value="Chemical Engineering">Chemical Engineering</option>
+                                        <option value="Civil Engineering">Civil Engineering</option>
+                                        <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                                        <option value="Electrical Engineering">Electrical Engineering</option>
+                                        <option value="Mechanical Engineering">Mechanical Engineering</option>
                                         <option value="Chemistry">Chemistry</option>
+                                        <option value="Humanities and Social Sciences">Humanities and Social Sciences</option>
+                                        <option value="Metallurgical and Material Engineering">Metallurgical and Material Engineering</option>
+                                        <option value="Physics">Physics</option>
+                                        <option value="Mathematics">Mathematics</option>
+                                        <option value="Mathematics and Computing">Mathematics and Computing</option>
                                     </Field>
                                     <ErrorMessage name="department" component="div" className="error-text" />
                                 </div>
@@ -158,9 +230,11 @@ export default function CreateOpening() {
                                     <label>Funding Type <span className="required">*</span></label>
                                     <Field as="select" name="fundingType" className="form-input">
                                         <option value="">Select Funding Type</option>
-                                        {FUNDING_OPTIONS.map(option => (
-                                            <option key={option} value={option.split(' ')[0]}>{option}</option>
-                                        ))}
+                                        <option value="Regular">Institute Fellowship (HTRA)</option>
+                                        <option value="External">External Fellowship (UGC-JRF, CSIR-JRF, etc.)</option>
+                                        <option value="Project Staff">Project Funded (JRF/SRF)</option>
+                                        <option value="Part-Time">Self-Sponsored / Part-Time</option>
+                                        <option value="Direct">Direct Admission</option>
                                     </Field>
                                     <ErrorMessage name="fundingType" component="div" className="error-text" />
                                 </div>

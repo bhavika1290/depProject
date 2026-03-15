@@ -21,9 +21,7 @@ export default function Admissions() {
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showOfferingModal, setShowOfferingModal] = useState(false);
 
-  const [cycles, setCycles] = useState([
-    { _id: '1', name: 'Admission Cycles for 2022-23', startDate: 'Apr 2023', endDate: 'Jun 2023' }
-  ]);
+  const [cycles, setCycles] = useState([]);
   const [offerings, setOfferings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showApplicantsModal, setShowApplicantsModal] = useState(false);
@@ -37,12 +35,29 @@ export default function Admissions() {
     offeringType: 'Regular',
     deadline: '',
     eligibility: '',
-    admissionCycleId: '64d1f5e8e4b0a1a2b3c4d5e6' // Placeholder cycle ID
+    admissionCycleId: ''
   });
 
   useEffect(() => {
+    fetchCycles();
     fetchOfferings();
   }, []);
+
+  const fetchCycles = async () => {
+    try {
+      const res = await api.get('/admission-cycles');
+      if (res.data.success) {
+        setCycles(res.data.data);
+        // Automatically set the cycle ID for the form if an active one exists
+        const activeCycle = res.data.data.find(c => c.isActive);
+        if (activeCycle) {
+          setOfferingForm(prev => ({ ...prev, admissionCycleId: activeCycle._id }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch cycles:', error);
+    }
+  };
 
   const fetchOfferings = async () => {
     try {
@@ -136,20 +151,19 @@ export default function Admissions() {
             </div>
 
             {cycles.map(cycle => (
-              <div key={cycle._id} className="admission-cycle-card" onClick={() => handleCycleClick(cycle)}>
-                <div className="cycle-icon">
+              <div key={cycle._id} className={`admission-cycle-card ${cycle.isActive ? 'active-border' : ''}`} onClick={() => handleCycleClick(cycle)}>
+                <div className={`cycle-icon ${cycle.isActive ? 'active-bg' : ''}`}>
                   <MdCalendarToday />
                 </div>
                 <div className="cycle-info">
-                  <div className="cycle-name">{cycle.name}</div>
+                  <div className="cycle-name">
+                    {cycle.name} {cycle.isActive && <span className="active-tag">Active</span>}
+                  </div>
                   <div className="cycle-duration">{cycle.startDate} - {cycle.endDate}</div>
                 </div>
                 <div className="cycle-actions" onClick={(e) => e.stopPropagation()}>
                   <button className="cycle-btn" onClick={() => { setSelectedCycle(cycle); setShowCycleModal(true); }}>
                     <MdEdit />
-                  </button>
-                  <button className="cycle-btn">
-                    <MdArchive />
                   </button>
                 </div>
               </div>
@@ -205,36 +219,50 @@ export default function Admissions() {
             <table className="premium-table">
               <thead>
                 <tr>
-                  <th>Department</th>
-                  <th>Specialization</th>
-                  <th>Offering Type</th>
+                  <th>Department / Focus</th>
+                  <th>Faculty In-Charge</th>
+                  <th>Type</th>
                   <th>Eligibility</th>
                   <th>Deadline</th>
                   <th>Status</th>
-                  <th>Results</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th style={{ textAlign: 'right' }}>Management</th>
                 </tr>
               </thead>
               <tbody>
                 {offerings.map(off => (
                   <tr key={off._id}>
-                    <td style={{ fontWeight: 600 }}>{off.department}</td>
-                    <td>{off.specialization}</td>
+                    <td>
+                      <div className="dept-cell">
+                        <span className="dept-name">{off.department}</span>
+                        <span className="spec-name">{off.specialization}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="faculty-owner">
+                        {off.facultyInCharge && off.facultyInCharge.length > 0 ? (
+                          <span title={off.facultyInCharge[0].email}>{off.facultyInCharge[0].name}</span>
+                        ) : (
+                          <span className="admin-managed">Admin Managed</span>
+                        )}
+                      </div>
+                    </td>
                     <td>{off.offeringType}</td>
-                    <td style={{ color: '#0070f3', cursor: 'pointer', fontWeight: 500 }} title={off.eligibility}>{off.eligibility?.substring(0, 15)}...</td>
-                    <td>{new Date(off.deadline).toLocaleDateString()}</td>
+                    <td className="eligibility-cell" title={off.eligibility}>
+                      {off.eligibility?.length > 20 ? off.eligibility.substring(0, 20) + '...' : off.eligibility}
+                    </td>
+                    <td className={new Date(off.deadline) < new Date() ? 'expired' : ''}>
+                      {new Date(off.deadline).toLocaleDateString()}
+                    </td>
                     <td>
                       <span className={`status-pill status-${off.status?.toLowerCase()}`}>
                         {off.status}
                       </span>
                     </td>
-                    <td style={{ color: '#64748b', fontSize: '0.85rem' }}>Not Published</td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                        <button className="cycle-btn" style={{ width: '32px', height: '32px' }} title="View Applicants" onClick={() => fetchOfferingApplicants(off._id)}><MdPeople /></button>
-                        <button className="cycle-btn" style={{ width: '32px', height: '32px' }} title="Edit"><MdEdit /></button>
-                        <button className="cycle-btn" style={{ width: '32px', height: '32px', color: '#f59e0b' }} title="Archive"><MdArchive /></button>
-                        <button className="cycle-btn" style={{ width: '32px', height: '32px', color: '#ef4444' }} title="Delete" onClick={() => handleDeleteOffering(off._id)}><MdDelete /></button>
+                      <div className="mgmt-actions">
+                        <button className="action-btn" title="View Applicants" onClick={() => fetchOfferingApplicants(off._id)}><MdPeople /></button>
+                        <button className="action-btn" title="Edit"><MdEdit /></button>
+                        <button className="action-btn delete" title="Delete" onClick={() => handleDeleteOffering(off._id)}><MdDelete /></button>
                       </div>
                     </td>
                   </tr>

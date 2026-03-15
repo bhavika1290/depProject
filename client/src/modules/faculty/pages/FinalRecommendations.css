@@ -60,6 +60,16 @@
     border-radius: 6px; font-weight: 700; font-size: 0.95rem; border: 1px solid #c7d2fe;
 }
 
+.score-input-wrap {
+    display: inline-flex; align-items: center; gap: 8px;
+}
+.score-input {
+    width: 65px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: 0.95rem; text-align: center; font-weight: 700; color: #3730a3; background: #eef2ff;
+}
+.score-input:focus { outline: none; border-color: #4f46e5; background: white; }
+.score-max { font-size: 0.8rem; color: #64748b; font-weight: 600; }
+
 /* Inputs */
 .rank-input {
     width: 60px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px;

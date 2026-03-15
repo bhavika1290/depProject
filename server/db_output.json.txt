@@ -1,0 +1,11 @@
+--- FACULTY ---
+[69ada1b1e525483a5834375c] Name: bhavika, Email: bhavika23sharma14@gmail.com
+[69b61e99f08f2aa4c22d61ed] Name: bhavika, Email: f@gmail.com
+
+--- APPLICATIONS ---
+Total Applications: 1
+App ID: 69b6239e35231ea1535ed494, Offering ID: 69b62224f08f2aa4c22d6209, Faculty In Charge: 
+
+--- OFFERINGS ---
+Total Offerings: 1
+Offering ID: 69b62224f08f2aa4c22d6209, Specialization: hh, Faculty In Charge: 

@@ -11,26 +11,82 @@ export default function FacultyDashboard() {
         totalCycles: 0,
         recentApplications: []
     });
+    const [activeCycle, setActiveCycle] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simulating fetch of Math specific stats
-        setLoading(true);
-        setTimeout(() => {
-            setStats({
-                totalApplications: 142,
-                totalOfferings: 3,
-                totalCycles: 1,
-                recentApplications: [
-                    { id: 'APP1001', name: 'Ravi Kumar', area: 'Algebra', cgpaModel: 'MSc', cgpa: 8.9, gate: 650, status: 'Applied' },
-                    { id: 'APP1002', name: 'Sneha Patel', area: 'Topology', cgpaModel: 'MSc', cgpa: 9.1, gate: 720, status: 'Applied' },
-                    { id: 'APP1003', name: 'Amit Singh', area: 'Numerical Analysis', cgpaModel: 'BSc', cgpa: 8.5, gate: 610, status: 'Shortlisted' },
-                    { id: 'APP1004', name: 'Priya Mehta', area: 'Probability Theory', cgpaModel: 'MSc', cgpa: 8.7, gate: 590, status: 'Applied' }
-                ]
-            });
-            setLoading(false);
-        }, 600);
-    }, []);
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                const [offeringsRes, applicationsRes, activeCycleRes] = await Promise.all([
+                    api.get('/offerings'),
+                    api.get(`/applications?facultyId=${currentUser.id}`),
+                    api.get('/admission-cycles/active')
+                ]);
+
+                if (activeCycleRes.data?.success) {
+                    setActiveCycle(activeCycleRes.data.data);
+                }
+
+                const allOfferings = offeringsRes.data?.data || [];
+                const facultyOfferings = allOfferings.filter(offering => 
+                    offering.facultyInCharge && offering.facultyInCharge.some(f => (f._id || f) === currentUser.id)
+                );
+
+                const facultyApplications = applicationsRes.data?.data || [];
+
+                let shortlisted = 0;
+                let recommended = 0;
+
+                const recentApps = facultyApplications.slice(0, 5).map(app => {
+                    if (app.status === 'Shortlisted') shortlisted++;
+                    if (app.status === 'Accepted') recommended++; // Assuming 'Accepted' maps to Final Recommendations
+                    
+                    return {
+                        id: app.applicationId,
+                        name: app.personalDetails?.fullName || app.userId?.name || 'N/A',
+                        area: app.offeringId?.specialization || 'N/A',
+                        cgpaModel: 'MSc', // Simplified for dashboard view
+                        cgpa: app.educationalDetails?.pg?.cgpa || 'N/A',
+                        gate: app.qualifyingExams?.find(exam => exam.examName === 'GATE')?.score || 'N/A',
+                        status: app.status
+                    };
+                });
+                
+                // Count remaining for accurate stats since we only mapped top 5 above
+                facultyApplications.forEach(app => {
+                    if (app.status === 'Shortlisted') {
+                        // Avoid double counting if it was in the top 5 we already counted
+                        if (!recentApps.some(ra => ra.id === app.applicationId)) shortlisted++;
+                    }
+                    if (app.status === 'Accepted') {
+                        if (!recentApps.some(ra => ra.id === app.applicationId)) recommended++;
+                    }
+                });
+
+                // Get unique cycles
+                const uniqueCycles = new Set(facultyOfferings.map(o => o.admissionCycleId?._id || o.admissionCycleId));
+
+                setStats({
+                    totalApplications: facultyApplications.length,
+                    totalOfferings: facultyOfferings.length,
+                    shortlistedCandidates: shortlisted,
+                    finalRecommendations: recommended,
+                    totalCycles: uniqueCycles.size,
+                    recentApplications: recentApps
+                });
+
+            } catch (error) {
+                console.error("Dashboard data fetch error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (currentUser) {
+            fetchDashboardData();
+        }
+    }, [currentUser]);
 
     // Safety checks
     if (!currentUser) return <Navigate to="/login" replace />;
@@ -48,14 +104,15 @@ export default function FacultyDashboard() {
                     Welcome Dr. {currentUser.name || currentUser.email} 👋
                 </h2>
                 <div style={{ color: '#475569', fontSize: '1.05rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span>Department of Mathematics</span>
+                    <span>Department of {currentUser.departments?.[0] || 'Mathematics'}</span>
                     <span>Indian Institute of Technology Ropar</span>
-                    <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>Admission Cycle: PhD 2026</span>
+                    <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>
+                        Admission Cycle: {activeCycle?.name || 'Loading...'}
+                    </span>
                 </div>
                 
                 <div style={{ marginTop: '16px', display: 'flex', gap: '24px', fontSize: '0.9rem', color: '#64748b' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🔬 Specialization: Algebra</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🕒 Last Login: Today 10:15 AM</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🔬 Specialization: {currentUser.specialization || 'Not Set'}</span>
                 </div>
             </div>
 
@@ -71,11 +128,11 @@ export default function FacultyDashboard() {
                 </div>
                 <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                     <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', fontWeight: 600, textTransform: 'uppercase' }}>Shortlisted Candidates</p>
-                    <h3 style={{ margin: '8px 0 0 0', fontSize: '2.5rem', color: '#3b82f6' }}>24</h3>
+                    <h3 style={{ margin: '8px 0 0 0', fontSize: '2.5rem', color: '#3b82f6' }}>{stats.shortlistedCandidates || 0}</h3>
                 </div>
                 <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                     <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', fontWeight: 600, textTransform: 'uppercase' }}>Final Recommendations</p>
-                    <h3 style={{ margin: '8px 0 0 0', fontSize: '2.5rem', color: '#10b981' }}>5</h3>
+                    <h3 style={{ margin: '8px 0 0 0', fontSize: '2.5rem', color: '#10b981' }}>{stats.finalRecommendations || 0}</h3>
                 </div>
             </div>
 

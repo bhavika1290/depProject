@@ -286,6 +286,24 @@
     color: #718096;
 }
 
+.admission-cycle-card.active-border {
+    border: 2px solid #0d9488;
+    background: #f0fdfa;
+}
+.cycle-icon.active-bg {
+    color: #0d9488;
+}
+.active-tag {
+    background: #0d9488;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
 .cycle-actions {
     display: flex;
     gap: 16px;
@@ -375,11 +393,31 @@
 }
 
 .premium-table td {
-    padding: 20px 24px;
+    padding: 16px 24px;
     border-bottom: 1px solid #f1f5f9;
     color: #334155;
     font-size: 0.95rem;
+    vertical-align: middle;
 }
+
+.dept-cell { display: flex; flex-direction: column; gap: 2px; }
+.dept-name { font-weight: 700; color: #1e293b; }
+.spec-name { font-size: 0.8rem; color: #64748b; }
+
+.faculty-owner { font-weight: 600; font-size: 0.9rem; color: #4f46e5; }
+.admin-managed { font-style: italic; color: #94a3b8; font-weight: 400; }
+
+.eligibility-cell { color: #0070f3; font-size: 0.85rem; font-weight: 500; }
+.expired { color: #ef4444; font-weight: 700; }
+
+.mgmt-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.action-btn { 
+    width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0;
+    display: flex; align-items: center; justify-content: center; background: white;
+    color: #64748b; cursor: pointer; transition: all 0.2s;
+}
+.action-btn:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+.action-btn.delete:hover { border-color: #fee2e2; color: #ef4444; background: #fff1f2; }
 
 .premium-table tr:hover td {
     background: #fcfdfe;
@@ -404,45 +442,86 @@
     color: #991b1b;
 }
 
-/* Modal */
+/* Universal Premium Modal */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(8px);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 1000;
     padding: 20px;
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content {
-    background: white;
-    border-radius: 24px;
+    background: #ffffff;
+    border-radius: 20px;
     width: 100%;
-    max-width: 700px;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 40px;
+    max-width: 650px;
+    margin: 40px auto;
     position: relative;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-header {
-    margin-bottom: 30px;
+    background: #ffffff;
+    padding: 24px 32px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    z-index: 10;
 }
 
 .modal-header h2 {
     margin: 0;
-    font-size: 1.6rem;
-    font-weight: 800;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.modal-header button {
+    background: #f8fafc;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    font-size: 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.modal-header button:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    transform: rotate(90deg);
+}
+
+.modal-body,
+.modal-content > form,
+.modal-content > .form-grid {
+    padding: 32px;
+}
+
+/* Provide padding for stray content directly in the modal */
+.modal-content > div:not(.modal-header):not(.modal-body) {
+    padding: 0 32px 32px 32px;
 }
 
 .form-grid {

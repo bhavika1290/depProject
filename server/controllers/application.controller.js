@@ -128,6 +128,15 @@ exports.createApplication = async (req, res, next) => {
             req.body.declarationAccepted = true;
         }
 
+        // Auto-fill admissionCycleId if not provided by frontend
+        if (!req.body.admissionCycleId && req.body.offeringId) {
+            const mongoose = require('mongoose');
+            const offering = await mongoose.model('Offering').findById(req.body.offeringId);
+            if (offering && offering.admissionCycleId) {
+                req.body.admissionCycleId = offering.admissionCycleId;
+            }
+        }
+
         console.log('Submitting data to Mongoose:', req.body);
 
         const application = await Application.create(req.body);
@@ -200,10 +209,23 @@ exports.getAllApplications = async (req, res, next) => {
         if (req.query.status) {
             query.status = req.query.status;
         }
+        if (req.query.facultyId) {
+            const mongoose = require('mongoose');
+            const offerings = await mongoose.model('Offering').find({ facultyInCharge: req.query.facultyId }).select('_id');
+            const offeringIds = offerings.map(o => o._id);
+            if (query.offeringId) {
+                // If offeringId is already specified, ensure it belongs to this faculty
+                if (!offeringIds.some(id => id.toString() === query.offeringId.toString())) {
+                    return res.status(200).json({ success: true, count: 0, data: [] });
+                }
+            } else {
+                query.offeringId = { $in: offeringIds };
+            }
+        }
 
         const applications = await Application.find(query)
             .populate('userId', 'name email')
-            .populate('offeringId', 'department specialization')
+            .populate('offeringId', 'department specialization offeringType')
             .populate('admissionCycleId', 'name')
             .sort({ createdAt: -1 });
 

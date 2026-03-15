@@ -30,7 +30,9 @@ const applicationSchema = new mongoose.Schema({
     interdisciplinaryDepartment: String,
     modeOfApplication: String,
     areaOfResearchPrefs: [String], // Array up to 4 preferences
-    specificAreaOfResearch: String
+    specificAreaOfResearch: String,
+    sop: String,
+    keywords: [String]
   },
 
   // Personal Details (from profile)
@@ -142,6 +144,21 @@ const applicationSchema = new mongoose.Schema({
     enum: ['Selected', 'Rejected', 'Waitlisted', 'Pending'],
     default: 'Pending'
   },
+
+  // Interview & Final Selection Details
+  interviewStatus: {
+    type: String,
+    enum: ['Pending Scheduling', 'Scheduled', 'Rescheduled', 'Completed', 'Absent', 'Selected', 'Waitlisted', 'Rejected'],
+    default: 'Pending Scheduling'
+  },
+  interviewDate: Date,
+  interviewScore: {
+    type: Number,
+    min: 0,
+    max: 100
+  },
+  facultyRemarks: String,
+  admissionRank: Number,
   
   // Timeline
   submittedAt: Date,

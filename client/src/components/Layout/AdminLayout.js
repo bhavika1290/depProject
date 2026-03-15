@@ -27,6 +27,7 @@ const AdminLayout = () => {
     const navItems = [
         { name: 'Dashboard', path: '/admin', icon: <MdDashboard /> },
         { name: 'Admissions', path: '/admin/admissions', icon: <MdCalendarToday /> },
+        { name: 'Audit Results', path: '/admin/audit', icon: <MdArchive /> },
         { name: 'Admins', path: '/admin/admins', icon: <MdPeople /> },
         { name: 'SendMail', path: '/admin/send-mail', icon: <MdEmail /> },
         { name: 'Templates', path: '/admin/templates', icon: <MdLibraryAdd /> },

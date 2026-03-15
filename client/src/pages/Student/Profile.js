@@ -20,7 +20,8 @@ export default function Profile() {
     educationalDetails: {
       tenthSchool: '', tenthBoard: '', tenthYear: '', tenthPercentage: '',
       twelfthSchool: '', twelfthBoard: '', twelfthYear: '', twelfthPercentage: '',
-      ugCollege: '', ugUniversity: '', ugDegree: '', ugSpecialization: '', ugYear: '', ugCGPA: ''
+      ugCollege: '', ugUniversity: '', ugDegree: '', ugSpecialization: '', ugYear: '', ugCGPA: '',
+      pgCollege: '', pgUniversity: '', pgDegree: '', pgSpecialization: '', pgYear: '', pgCGPA: ''
     }
   });
 
@@ -160,6 +161,18 @@ export default function Profile() {
             <div className="form-group"><label>Specialization / Branch</label><input name="ugSpecialization" value={formData.educationalDetails.ugSpecialization} onChange={handleEduChange} required /></div>
             <div className="form-group"><label>Year of Passing</label><input type="number" name="ugYear" value={formData.educationalDetails.ugYear} onChange={handleEduChange} required min="1980" max={new Date().getFullYear() + 1} /></div>
             <div className="form-group"><label>CGPA / Percentage</label><input type="number" step="0.01" name="ugCGPA" value={formData.educationalDetails.ugCGPA} onChange={handleEduChange} required /></div>
+          </div>
+        </div>
+
+        <div className="page-card" style={{ marginBottom: '30px', padding: '40px' }}>
+          <h3 style={{ fontSize: '1.25rem', marginBottom: '20px', borderBottom: '2px solid #e5e7eb', paddingBottom: '10px' }}>Educational Details (Post-Graduate / Master's)</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            <div className="form-group"><label>College / Institute</label><input name="pgCollege" value={formData.educationalDetails.pgCollege} onChange={handleEduChange} placeholder="e.g. IIT Ropar" /></div>
+            <div className="form-group"><label>University</label><input name="pgUniversity" value={formData.educationalDetails.pgUniversity} onChange={handleEduChange} /></div>
+            <div className="form-group"><label>Degree</label><input name="pgDegree" value={formData.educationalDetails.pgDegree} onChange={handleEduChange} placeholder="e.g. M.Sc, M.Tech" /></div>
+            <div className="form-group"><label>Specialization</label><input name="pgSpecialization" value={formData.educationalDetails.pgSpecialization} onChange={handleEduChange} /></div>
+            <div className="form-group"><label>Year of Passing</label><input type="number" name="pgYear" value={formData.educationalDetails.pgYear} onChange={handleEduChange} min="1980" max={new Date().getFullYear() + 1} /></div>
+            <div className="form-group"><label>CGPA / Percentage</label><input type="number" step="0.01" name="pgCGPA" value={formData.educationalDetails.pgCGPA} onChange={handleEduChange} /></div>
           </div>
         </div>
 

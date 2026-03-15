@@ -1,73 +1,50 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/apiCore';
 import './FinalRecommendations.css';
 
-// Dummy candidates representing the final pool post-interview
-const initialCandidates = [
-    {
-        id: 'APP2026-008',
-        name: 'Rahul Gupta',
-        category: 'General',
-        mscCgpa: 9.3,
-        gateScore: 780,
-        interviewScore: 92, // out of 100
-        researchArea: 'Algebra',
-        status: 'Pending', // Pending, Recommended, Waitlisted, Rejected
-        rank: '',
-        remarks: ''
-    },
-    {
-        id: 'APP2026-002',
-        name: 'Sneha Patel',
-        category: 'OBC',
-        mscCgpa: 9.1,
-        gateScore: 720,
-        interviewScore: 88,
-        researchArea: 'Topology',
-        status: 'Pending',
-        rank: '',
-        remarks: ''
-    },
-    {
-        id: 'APP2026-004',
-        name: 'Priya Mehta',
-        category: 'General',
-        mscCgpa: 8.6,
-        gateScore: 610,
-        interviewScore: 85,
-        researchArea: 'Probability Theory',
-        status: 'Pending',
-        rank: '',
-        remarks: ''
-    },
-    {
-        id: 'APP2026-005',
-        name: 'Vikram Sharma',
-        category: 'EWS',
-        mscCgpa: 7.5,
-        gateScore: 490,
-        interviewScore: 65,
-        researchArea: 'Differential Geometry',
-        status: 'Pending',
-        rank: '',
-        remarks: ''
-    },
-    {
-        id: 'APP2026-003',
-        name: 'Amit Singh',
-        category: 'SC',
-        mscCgpa: 8.2,
-        gateScore: 580,
-        interviewScore: 78,
-        researchArea: 'Numerical Analysis',
-        status: 'Pending',
-        rank: '',
-        remarks: ''
-    }
-];
-
 export default function FinalRecommendations() {
-    const [candidates, setCandidates] = useState(initialCandidates);
+    const { currentUser } = useAuth();
+    const [candidates, setCandidates] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch live pool for recommendations
+    useEffect(() => {
+        const fetchFinalPool = async () => {
+            if (!currentUser) return;
+            try {
+                setLoading(true);
+                // Status 'Shortlisted' candidates are the ones to be recommended
+                const res = await api.get(`/applications?facultyId=${currentUser.id}&status=Shortlisted`);
+                const data = res.data.data;
+
+                const mapped = data.map(app => {
+                    const gateExam = app.qualifyingExams?.find(e => e.examName === 'GATE');
+                    return {
+                        _id: app._id,
+                        id: app.applicationId || 'N/A',
+                        name: app.personalDetails?.fullName || app.userId?.name || 'N/A',
+                        category: app.personalDetails?.category || 'General',
+                        mscCgpa: parseFloat(app.educationalDetails?.pg?.cgpa) || 0,
+                        gateScore: parseInt(gateExam?.score) || 0,
+                        interviewScore: app.interviewScore || 0,
+                        researchArea: app.offeringId?.specialization || 'Not Specified',
+                        status: app.result || 'Pending', // Selected, Rejected, Waitlisted, Pending
+                        rank: app.admissionRank || '',
+                        remarks: app.facultyRemarks || ''
+                    };
+                });
+                setCandidates(mapped);
+            } catch (err) {
+                console.error('Failed to fetch final pool', err);
+                toast.error('Failed to load live data.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchFinalPool();
+    }, [currentUser]);
     
     // UI State
     const [searchTerm, setSearchTerm] = useState('');
@@ -145,6 +122,12 @@ export default function FinalRecommendations() {
         setCandidates(prev => prev.map(c => c.id === id ? { ...c, remarks: newRemark } : c));
     };
 
+    // Added Score Change handler since it's present in the table
+    const handleScoreChange = (id, newScore) => {
+        if (hasSubmitted) return;
+        setCandidates(prev => prev.map(c => c.id === id ? { ...c, interviewScore: newScore } : c));
+    };
+
     const attemptSubmit = () => {
         if (summaryStats.pending > 0) {
             toast.warn(`You still have ${summaryStats.pending} pending candidate(s). Please classify all candidates before submitting.`);
@@ -153,11 +136,43 @@ export default function FinalRecommendations() {
         setIsConfirmOpen(true);
     };
 
-    const commitSubmission = () => {
+    const commitSubmission = async () => {
         setIsConfirmOpen(false);
-        setHasSubmitted(true);
-        toast.success('Final Recommendations successfully submitted to the Department Committee!');
+        try {
+            // In a real app we'd likely have a bulk update endpoint,
+            // but for now we'll simulate it with individual updates for robustness.
+            const updates = candidates.map(c => {
+                // Map local status (Recommended/Rejected/Waitlisted) to backend 'result'
+                const finalResult = c.status === 'Recommended' ? 'Selected' : c.status;
+                const finalStatus = c.status === 'Recommended' ? 'Accepted' : c.status;
+                return api.put(`/applications/${c._id}/status`, {
+                    result: finalResult,
+                    status: finalStatus,
+                    interviewScore: c.interviewScore,
+                    admissionRank: c.rank || undefined,
+                    facultyRemarks: c.remarks
+                });
+            });
+
+            await Promise.all(updates);
+
+            setHasSubmitted(true);
+            toast.success('Final Recommendations successfully submitted to the Department Committee!');
+        } catch (err) {
+            console.error('Final submission failed', err);
+            toast.error('Failed to submit final recommendations.');
+        }
     };
+
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#64748b' }}>
+                <div className="loading-spinner" style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '15px' }}></div>
+                <p>Loading final recommendation pool...</p>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="recommendations-container">
@@ -259,8 +274,16 @@ export default function FinalRecommendations() {
                                             </div>
                                         </td>
                                         <td>
-                                            <div className="score-badge">
-                                                {c.interviewScore} / 100
+                                            <div className="score-input-wrap">
+                                                <input 
+                                                    type="number" 
+                                                    className="score-input" 
+                                                    min="0" 
+                                                    max="100" 
+                                                    value={c.interviewScore} 
+                                                    onChange={e => handleScoreChange(c.id, e.target.value)}
+                                                />
+                                                <span className="score-max">/ 100</span>
                                             </div>
                                         </td>
                                         <td>

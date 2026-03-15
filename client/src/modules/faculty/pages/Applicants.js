@@ -1,53 +1,69 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/apiCore';
 import './Applicants.css';
 
-// Rich Dummy Data
-const initialApplicants = [
-    {
-        id: 'APP2026-001', name: 'Ravi Kumar', category: 'General',
-        mscCgpa: 8.9, bscCgpa: 8.5, gateScore: 650, csirNet: true, nbhm: true,
-        researchArea: 'Algebra', status: 'Applied', applicationDate: '2026-01-15',
-        phone: '+91 9876543210', email: 'ravi.k@example.com',
-        college: 'Delhi University', sop: 'I am deeply interested in Group Theory...',
-        publications: 1, documents: [{ name: 'SOP.pdf', type: 'SOP' }, { name: 'MSc_Transcript.pdf', type: 'Transcript' }]
-    },
-    {
-        id: 'APP2026-002', name: 'Sneha Patel', category: 'OBC',
-        mscCgpa: 9.1, bscCgpa: 8.8, gateScore: 720, csirNet: true, nbhm: false,
-        researchArea: 'Topology', status: 'Shortlisted', applicationDate: '2026-01-14',
-        phone: '+91 8765432109', email: 'patel.s@example.com',
-        college: 'IIT Bombay', sop: 'My masters thesis focused on Knot invariants.',
-        publications: 2, documents: [{ name: 'SOP.pdf', type: 'SOP' }, { name: 'Gate_Scorecard.pdf', type: 'Scorecard' }, { name: 'Thesis_Summary.pdf', type: 'Other' }]
-    },
-    {
-        id: 'APP2026-003', name: 'Amit Singh', category: 'SC',
-        mscCgpa: 8.2, bscCgpa: 7.9, gateScore: 580, csirNet: false, nbhm: false,
-        researchArea: 'Numerical Analysis', status: 'Applied', applicationDate: '2026-01-12',
-        phone: '+91 7654321098', email: 'amit.math@example.com',
-        college: 'Panjab University', sop: 'Eager to work on computational scaling of nonlinear PDEs.',
-        publications: 0, documents: [{ name: 'SOP.pdf', type: 'SOP' }, { name: 'MSc_Transcript.pdf', type: 'Transcript' }]
-    },
-    {
-        id: 'APP2026-004', name: 'Priya Mehta', category: 'General',
-        mscCgpa: 8.6, bscCgpa: 8.3, gateScore: 610, csirNet: false, nbhm: true,
-        researchArea: 'Probability Theory', status: 'Applied', applicationDate: '2026-01-10',
-        phone: '+91 6543210987', email: 'p.mehta99@example.com',
-        college: 'IISER Pune', sop: 'Looking to dive deep into Stochastic Processes in Financial Markets.',
-        publications: 1, documents: [{ name: 'SOP.pdf', type: 'SOP' }]
-    },
-    {
-        id: 'APP2026-005', name: 'Vikram Sharma', category: 'EWS',
-        mscCgpa: 7.5, bscCgpa: 7.2, gateScore: 490, csirNet: false, nbhm: false,
-        researchArea: 'Differential Geometry', status: 'Rejected', applicationDate: '2026-01-05',
-        phone: '+91 5432109876', email: 'vikram.s@example.com',
-        college: 'NIT Kurukshetra', sop: 'Interested in Riemannian manifolds.',
-        publications: 0, documents: [{ name: 'SOP.pdf', type: 'SOP' }, { name: 'UG_Transcript.pdf', type: 'Transcript' }]
-    }
-];
-
 export default function Applicants() {
-    const [applicants, setApplicants] = useState(initialApplicants);
+    const { currentUser } = useAuth();
+    const [applicants, setApplicants] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch real applications on mount
+    useEffect(() => {
+        const fetchApplications = async () => {
+            if (!currentUser) return;
+            try {
+                setLoading(true);
+                const res = await api.get(`/applications?facultyId=${currentUser.id}`);
+                const data = res.data.data;
+                
+                // Map API payload back to the rich dummy structure UI expects
+                const mappedApplicants = data.map(app => {
+                    const gateExam = app.qualifyingExams?.find(e => e.examName === 'GATE');
+                    const netExam = app.qualifyingExams?.find(e => e.examName === 'CSIR-NET' || e.examName === 'UGC-NET');
+                    const nbhmExam = app.qualifyingExams?.find(e => e.examName === 'NBHM');
+
+                    // Best effort mapping to documents visually
+                    const mappedDocs = [];
+                    if (app.documents?.marksheets) mappedDocs.push({ name: 'Marksheets.zip', type: 'Transcript' });
+                    if (app.documents?.certificates) mappedDocs.push({ name: 'Certificates.zip', type: 'Other' });
+                    app.documents?.other?.forEach((doc, i) => mappedDocs.push({ name: `Other_Doc_${i+1}.pdf`, type: 'Other' }));
+                    if (mappedDocs.length === 0) mappedDocs.push({ name: 'Application_Snapshot.pdf', type: 'System Generated' });
+
+                    return {
+                        _id: app._id, // Raw backend ID for updates
+                        id: app.applicationId || 'N/A',
+                        name: app.personalDetails?.fullName || app.userId?.name || 'N/A',
+                        category: app.personalDetails?.category || 'General',
+                        mscCgpa: parseFloat(app.educationalDetails?.pg?.cgpa) || 0,
+                        bscCgpa: parseFloat(app.educationalDetails?.ug?.cgpa) || 0,
+                        gateScore: parseInt(gateExam?.score) || 0,
+                        csirNet: !!netExam,
+                        nbhm: !!nbhmExam,
+                        researchArea: app.offeringId?.specialization || 'Not Specified',
+                        status: app.status || 'Draft',
+                        applicationDate: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Unknown',
+                        phone: app.communicationDetails?.phone || 'Not Provided',
+                        email: app.userId?.email || 'No Email',
+                        college: app.educationalDetails?.pg?.college || app.educationalDetails?.ug?.college || 'Not Specified',
+                        sop: app.generalApplicationDetails?.specificAreaOfResearch || 'N/A',
+                        publications: app.publications?.length || 0,
+                        documents: mappedDocs
+                    };
+                });
+                
+                setApplicants(mappedApplicants);
+            } catch (err) {
+                console.error('Failed to fetch applications', err);
+                toast.error('Failed to load real applicants data');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchApplications();
+    }, [currentUser]);
 
     // Filtering states
     const [searchTerm, setSearchTerm] = useState('');
@@ -62,7 +78,7 @@ export default function Applicants() {
 
     // Modal state
     const [selectedApplicant, setSelectedApplicant] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false)    // Helper sorting function
+    const [isModalOpen, setIsModalOpen] = useState(false); // Helper sorting function
     const handleSort = (key) => {
         let direction = 'desc'; // Default to descending for things like scores
         if (sortConfig.key === key && sortConfig.direction === 'desc') {
@@ -121,17 +137,28 @@ export default function Applicants() {
         setIsModalOpen(true);
     };
 
-    const handleStatusUpdate = (id, newStatus) => {
-        setApplicants(prev => prev.map(app => app.id === id ? { ...app, status: newStatus } : app));
-        if (newStatus === 'Shortlisted') {
-            toast.success(`Applicant ${id} successfully shortlisted!`);
-        } else if (newStatus === 'Rejected') {
-            toast.info(`Applicant ${id} moved to rejected list.`);
-        }
+    const handleStatusUpdate = async (id, newStatus) => {
+        // Find the raw _id for the API call
+        const applicantToUpdate = applicants.find(app => app.id === id);
+        if (!applicantToUpdate || !applicantToUpdate._id) return;
 
-        // Update modal state if it's currently open
-        if (selectedApplicant && selectedApplicant.id === id) {
-            setSelectedApplicant(prev => ({ ...prev, status: newStatus }));
+        try {
+            await api.put(`/applications/${applicantToUpdate._id}/status`, { status: newStatus });
+
+            setApplicants(prev => prev.map(app => app.id === id ? { ...app, status: newStatus } : app));
+            if (newStatus === 'Shortlisted') {
+                toast.success(`Applicant ${id} successfully shortlisted!`);
+            } else if (newStatus === 'Rejected') {
+                toast.info(`Applicant ${id} moved to rejected list.`);
+            }
+
+            // Update modal state if it's currently open
+            if (selectedApplicant && selectedApplicant.id === id) {
+                setSelectedApplicant(prev => ({ ...prev, status: newStatus }));
+            }
+        } catch (error) {
+            console.error('Status update failed', error);
+            toast.error('Failed to update applicant status');
         }
     };
 
@@ -142,11 +169,27 @@ export default function Applicants() {
 
     return (
         <div className="applicants-container">
-            <div className="page-header">
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div className="header-title">
                     <h2>Applicants List</h2>
                     <p>Review, filter, and shortlist students who have applied to your openings.</p>
                 </div>
+                <Link to="/faculty/applicants/filter" className="btn-advanced-screening" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    padding: '12px 20px', 
+                    backgroundColor: '#4f46e5', 
+                    color: 'white', 
+                    borderRadius: '10px', 
+                    textDecoration: 'none', 
+                    fontWeight: '600',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
+                    fontSize: '0.95rem'
+                }}>
+                    <span className="icon">🎯</span> Advanced Smart Filter
+                </Link>
             </div>
 
             {/* Controls */}

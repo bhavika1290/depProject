@@ -4,6 +4,8 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Public Pages
 import Home from './pages/Public/Home';
@@ -26,6 +28,7 @@ import ApplicationForm from './pages/Student/ApplicationForm';
 import AdminLayout from './components/Layout/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import Admissions from './pages/Admin/Admissions';
+import AuditResults from './pages/Admin/AuditResults';
 import Templates from './pages/Admin/Templates';
 // Faculty Pages
 import FacultyLayout from './modules/faculty/components/FacultyLayout';
@@ -89,6 +92,7 @@ export default function App() {
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="admissions" element={<Admissions />} />
+              <Route path="audit" element={<AuditResults />} />
               <Route path="admins" element={<div>Admins Management</div>} />
               <Route path="send-mail" element={<div>Send Mail</div>} />
               <Route path="templates" element={<Templates />} />
@@ -119,6 +123,7 @@ export default function App() {
           </Routes>
         </main>
         {!hideGlobalNav && <Footer />}
+        <ToastContainer position="top-right" autoClose={5000} />
       </div>
     </AuthProvider>
   );

@@ -65,9 +65,13 @@ exports.getOfferingById = async (req, res, next) => {
 
 // @desc    Create new offering
 // @route   POST /api/offerings
-// @access  Private (Admin)
+// @access  Private (Admin, Faculty)
 exports.createOffering = async (req, res, next) => {
     try {
+        if (req.user && req.user.role === 'faculty') {
+            req.body.facultyInCharge = [req.user.id];
+        }
+        
         const offering = await Offering.create(req.body);
 
         res.status(201).json({

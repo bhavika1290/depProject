@@ -65,6 +65,30 @@ exports.getDashboardStats = async (req, res, next) => {
             return { ...gen, Applications: found ? found.count : 0 };
         });
 
+        // Get department-wise stats
+        const deptStatsRaw = await Application.aggregate([
+            {
+                $lookup: {
+                    from: 'offerings',
+                    localField: 'offeringId',
+                    foreignField: '_id',
+                    as: 'offering'
+                }
+            },
+            { $unwind: '$offering' },
+            {
+                $group: {
+                    _id: '$offering.department',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const departmentStats = deptStatsRaw.map(d => ({
+            name: d._id,
+            Applications: d.count
+        }));
+
         res.status(200).json({
             success: true,
             data: {
@@ -74,7 +98,8 @@ exports.getDashboardStats = async (req, res, next) => {
                 recentApplications,
                 activeCycle: activeCycle || null,
                 categoryStats,
-                genderStats
+                genderStats,
+                departmentStats
             }
         });
     } catch (error) {
