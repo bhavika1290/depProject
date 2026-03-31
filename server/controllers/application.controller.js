@@ -1,8 +1,55 @@
 const Application = require('../models/Application.model');
 const Profile = require('../models/Profile.model');
+const PaymentTransaction = require('../models/PaymentTransaction.model');
 const fs = require('fs');
 const path = require('path');
 const xlsx = require('xlsx');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
+const ALLOWED_FEE_CATEGORIES = ['GEN', 'OBC', 'SC', 'ST', 'PWD', 'EWS'];
+
+const normalizeCategory = (category = '') => String(category).trim().toUpperCase();
+
+const calculateApplicationFee = (category) => {
+    const normalized = normalizeCategory(category);
+    return normalized === 'GEN' || normalized === 'OBC' ? 500 : 250;
+};
+
+const getRazorpayClient = () => {
+    const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+    const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+
+    if (!keyId || !keySecret) {
+        throw new Error('Razorpay keys are not configured on server');
+    }
+
+    if (!keyId.startsWith('rzp_')) {
+        throw new Error('Invalid Razorpay key format in server configuration');
+    }
+
+    return new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret
+    });
+};
+
+const getReadableError = (error, fallbackMessage) => {
+    const message = (
+        error?.error?.description ||
+        error?.description ||
+        error?.message ||
+        fallbackMessage
+    );
+
+    if (String(message).toLowerCase().includes('authentication failed')) {
+        return 'Razorpay authentication failed. Please verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server/.env and restart server.';
+    }
+
+    return (
+        message
+    );
+};
 
 // @desc    Get user's applications
 // @route   GET /api/applications/my-applications
@@ -48,6 +95,61 @@ exports.createApplication = async (req, res, next) => {
                 }
             }
         });
+
+        const requestedCategory = req.body.paymentDetails?.category;
+        const normalizedCategory = normalizeCategory(requestedCategory);
+        const allowedCategory = ALLOWED_FEE_CATEGORIES.includes(normalizedCategory);
+
+        if (!allowedCategory) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid payment category selected'
+            });
+        }
+
+        const expectedAmount = calculateApplicationFee(normalizedCategory);
+        const {
+            razorpayOrderId,
+            razorpayPaymentId,
+            razorpaySignature,
+            paymentStatus
+        } = req.body.paymentDetails || {};
+
+        if (
+            paymentStatus !== 'Completed' ||
+            !razorpayOrderId ||
+            !razorpayPaymentId ||
+            !razorpaySignature
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: 'Complete online fee payment before submitting application'
+            });
+        }
+
+        const verifiedPayment = await PaymentTransaction.findOne({
+            userId: req.user.id,
+            razorpayOrderId,
+            razorpayPaymentId,
+            razorpaySignature,
+            paymentStatus: 'Completed'
+        });
+
+        if (!verifiedPayment) {
+            return res.status(400).json({
+                success: false,
+                message: 'Payment verification failed. Please retry payment.'
+            });
+        }
+
+        req.body.paymentDetails = {
+            ...(req.body.paymentDetails || {}),
+            category: normalizedCategory,
+            amount: expectedAmount,
+            paymentStatus: 'Completed',
+            transactionId: razorpayPaymentId,
+            bank: 'Razorpay'
+        };
 
         // Fetch User Profile to fill in details if missing
         const profile = await Profile.findOne({ userId: req.user.id });
@@ -185,6 +287,171 @@ exports.getApplicationById = async (req, res, next) => {
         });
     } catch (error) {
         next(error);
+    }
+};
+
+// @desc    Create Razorpay order
+// @route   POST /api/applications/create-order
+// @access  Private (Student)
+exports.createOrder = async (req, res, next) => {
+    try {
+        const { category } = req.body;
+        const normalizedCategory = normalizeCategory(category);
+
+        if (!ALLOWED_FEE_CATEGORIES.includes(normalizedCategory)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please select a valid category'
+            });
+        }
+
+        const razorpay = getRazorpayClient();
+        const amount = calculateApplicationFee(normalizedCategory);
+
+        // Razorpay receipt has a max length of 40 chars.
+        const shortUserId = String(req.user.id).slice(-8);
+        const receipt = `fee_${shortUserId}_${Date.now()}`;
+
+        const order = await razorpay.orders.create({
+            amount: amount * 100,
+            currency: 'INR',
+            receipt,
+            notes: {
+                userId: String(req.user.id),
+                category: normalizedCategory
+            }
+        });
+
+        console.log('Razorpay create-order success:', {
+            userId: req.user.id,
+            category: normalizedCategory,
+            amount,
+            amountInPaise: amount * 100,
+            currency: order.currency,
+            orderId: order.id
+        });
+
+        await PaymentTransaction.create({
+            userId: req.user.id,
+            category: normalizedCategory,
+            amount,
+            paymentStatus: 'Pending',
+            razorpayOrderId: order.id
+        });
+
+        res.status(201).json({
+            success: true,
+            data: {
+                key: process.env.RAZORPAY_KEY_ID,
+                orderId: order.id,
+                amount,
+                currency: order.currency,
+                user: {
+                    name: req.user.name || '',
+                    email: req.user.email || ''
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Razorpay create-order error:', error);
+        res.status(error?.statusCode || 400).json({
+            success: false,
+            message: getReadableError(error, 'Failed to create payment order')
+        });
+    }
+};
+
+// @desc    Verify Razorpay payment
+// @route   POST /api/applications/verify-payment
+// @access  Private (Student)
+exports.verifyPayment = async (req, res, next) => {
+    try {
+        const {
+            category,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature
+        } = req.body;
+
+        console.log('Razorpay verify-payment request:', {
+            userId: req.user.id,
+            category,
+            razorpay_order_id,
+            razorpay_payment_id
+        });
+
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({
+                success: false,
+                message: 'Incomplete payment data'
+            });
+        }
+
+        const generatedSignature = crypto
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+            .digest('hex');
+
+        if (generatedSignature !== razorpay_signature) {
+            await PaymentTransaction.findOneAndUpdate(
+                { razorpayOrderId: razorpay_order_id, userId: req.user.id },
+                { paymentStatus: 'Failed' }
+            );
+
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid payment signature'
+            });
+        }
+
+        const normalizedCategory = normalizeCategory(category);
+        if (!ALLOWED_FEE_CATEGORIES.includes(normalizedCategory)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid payment category'
+            });
+        }
+        const amount = calculateApplicationFee(normalizedCategory);
+
+        const paymentRecord = await PaymentTransaction.findOneAndUpdate(
+            { razorpayOrderId: razorpay_order_id, userId: req.user.id },
+            {
+                category: normalizedCategory,
+                amount,
+                razorpayPaymentId: razorpay_payment_id,
+                razorpaySignature: razorpay_signature,
+                paymentStatus: 'Completed',
+                paidAt: new Date()
+            },
+            { new: true }
+        );
+
+        if (!paymentRecord) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment order not found for this user'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Payment verified successfully',
+            data: {
+                category: paymentRecord.category,
+                amount: paymentRecord.amount,
+                paymentStatus: paymentRecord.paymentStatus,
+                transactionDate: paymentRecord.paidAt,
+                razorpayOrderId: paymentRecord.razorpayOrderId,
+                razorpayPaymentId: paymentRecord.razorpayPaymentId,
+                razorpaySignature: paymentRecord.razorpaySignature
+            }
+        });
+    } catch (error) {
+        console.error('Razorpay verify-payment error:', error);
+        res.status(error?.statusCode || 400).json({
+            success: false,
+            message: getReadableError(error, 'Failed to verify payment')
+        });
     }
 };
 

@@ -111,6 +111,9 @@ const applicationSchema = new mongoose.Schema({
     amount: Number,
     transactionId: String,
     bank: String,
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    razorpaySignature: String,
     transactionSlip: String,
     paymentDate: Date,
     paymentStatus: {

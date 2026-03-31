@@ -6,6 +6,8 @@ const { upload, setUploadType } = require('../utils/upload.util');
 
 // Student routes
 router.get('/my-applications', protect, applicationController.getMyApplications);
+router.post('/create-order', protect, authorize('student'), applicationController.createOrder);
+router.post('/verify-payment', protect, authorize('student'), applicationController.verifyPayment);
 router.post(
   '/',
   protect,

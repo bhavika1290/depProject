@@ -12,6 +12,13 @@ const steps = [
     'Review'
 ];
 
+const feeCategories = ['GEN', 'OBC', 'SC', 'ST', 'PwD', 'EWS'];
+
+const calculateFeeFromCategory = (category) => {
+    const normalizedCategory = String(category || '').toUpperCase();
+    return normalizedCategory === 'GEN' || normalizedCategory === 'OBC' ? 500 : 250;
+};
+
 export default function ApplicationForm() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -20,6 +27,8 @@ export default function ApplicationForm() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
+    const [paymentMessage, setPaymentMessage] = useState('');
+    const [isPaying, setIsPaying] = useState(false);
     const [requirements, setRequirements] = useState(null);
     const [profile, setProfile] = useState(null);
 
@@ -46,13 +55,15 @@ export default function ApplicationForm() {
             category: '',
             amount: '',
             transactionId: '',
-            bank: '',
-            paymentDate: ''
+            bank: 'Razorpay',
+            paymentDate: '',
+            paymentStatus: 'Pending',
+            razorpayOrderId: '',
+            razorpayPaymentId: '',
+            razorpaySignature: ''
         },
         declarationAccepted: false,
     });
-
-    const [transactionSlip, setTransactionSlip] = useState(null);
 
     const fetchOffering = useCallback(async () => {
         try {
@@ -108,8 +119,44 @@ export default function ApplicationForm() {
         fetchOffering();
     }, [fetchOffering]);
 
+    useEffect(() => {
+        const selectedCategory = formData.paymentDetails.category;
+        if (!selectedCategory) return;
+
+        const computedAmount = calculateFeeFromCategory(selectedCategory);
+        setFormData(prev => ({
+            ...prev,
+            paymentDetails: {
+                ...prev.paymentDetails,
+                amount: computedAmount
+            }
+        }));
+    }, [formData.paymentDetails.category]);
+
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
     const handleNext = () => {
+        if (currentStep === 3 && formData.paymentDetails.paymentStatus !== 'Completed') {
+            setError('Complete the online payment to proceed to the next step.');
+            return;
+        }
+
         if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
+        setError(null);
         window.scrollTo(0, 0);
     };
 
@@ -148,8 +195,186 @@ export default function ApplicationForm() {
         });
     };
 
+    const handleCategoryChange = (selectedCategory) => {
+        if (!selectedCategory) {
+            handleNestedChange('paymentDetails', 'category', '');
+            return;
+        }
+
+        const computedAmount = calculateFeeFromCategory(selectedCategory);
+        setPaymentMessage('');
+        setFormData(prev => ({
+            ...prev,
+            paymentDetails: {
+                ...prev.paymentDetails,
+                category: selectedCategory,
+                amount: computedAmount,
+                paymentStatus: 'Pending',
+                paymentDate: '',
+                transactionId: '',
+                razorpayOrderId: '',
+                razorpayPaymentId: '',
+                razorpaySignature: ''
+            }
+        }));
+    };
+
+    const handlePayNow = async () => {
+        const { category } = formData.paymentDetails;
+        if (!category) {
+            setError('Please select your category before initiating payment.');
+            return;
+        }
+
+        setError(null);
+        setPaymentMessage('');
+        setIsPaying(true);
+
+        try {
+            const scriptLoaded = await loadRazorpayScript();
+            if (!scriptLoaded) {
+                throw new Error('Unable to load Razorpay checkout. Please try again.');
+            }
+
+            const orderResponse = await api.post('/applications/create-order', { category });
+            const { orderId, amount, currency, key, user } = orderResponse.data.data;
+
+            const amountInPaise = Number(amount) * 100;
+            const checkoutKey = (key || '').trim();
+            const checkoutCurrency = currency || 'INR';
+            const checkoutOrderId = orderId || '';
+            const isMobileDevice = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
+            const upiFlow = isMobileDevice ? 'intent' : 'collect';
+
+            console.log('Razorpay order response:', orderResponse.data);
+
+            const options = {
+                key: checkoutKey,
+                amount: amountInPaise,
+                currency: checkoutCurrency,
+                name: 'IIT Ropar Admissions',
+                description: 'PhD Application Fee',
+                order_id: checkoutOrderId,
+                method: {
+                    upi: true,
+                    card: false,
+                    netbanking: false,
+                    wallet: false,
+                    emi: false,
+                    paylater: false
+                },
+                upi: {
+                    flow: upiFlow
+                },
+                config: {
+                    display: {
+                        blocks: {
+                            upi: {
+                                name: 'Pay using UPI',
+                                instruments: [
+                                    {
+                                        method: 'upi',
+                                        flows: [upiFlow]
+                                    }
+                                ]
+                            }
+                        },
+                        sequence: ['block.upi'],
+                        preferences: {
+                            show_default_blocks: false
+                        }
+                    }
+                },
+                prefill: {
+                    name: profile?.personalInfo?.fullName || user?.name || '',
+                    email: user?.email || '',
+                    contact: profile?.personalInfo?.mobile || profile?.personalInfo?.phone || ''
+                },
+                theme: {
+                    color: '#2563eb'
+                },
+                handler: async (response) => {
+                    try {
+                        const verificationResponse = await api.post('/applications/verify-payment', {
+                            category,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature
+                        });
+
+                        const verifiedPayment = verificationResponse.data.data;
+                        setFormData(prev => ({
+                            ...prev,
+                            paymentDetails: {
+                                ...prev.paymentDetails,
+                                category: verifiedPayment.category,
+                                amount: verifiedPayment.amount,
+                                paymentStatus: verifiedPayment.paymentStatus,
+                                paymentDate: new Date(verifiedPayment.transactionDate).toISOString().slice(0, 10),
+                                bank: 'Razorpay',
+                                transactionId: verifiedPayment.razorpayPaymentId,
+                                razorpayOrderId: verifiedPayment.razorpayOrderId,
+                                razorpayPaymentId: verifiedPayment.razorpayPaymentId,
+                                razorpaySignature: verifiedPayment.razorpaySignature
+                            }
+                        }));
+                        setPaymentMessage('Payment successful and verified. You can continue to the next step.');
+                    } catch (verifyErr) {
+                        setError(verifyErr.response?.data?.message || 'Payment verification failed. Please try paying again.');
+                    }
+                },
+                modal: {
+                    ondismiss: () => {
+                        setPaymentMessage('Payment popup closed before completion.');
+                    }
+                }
+            };
+
+            if (!checkoutKey || !checkoutOrderId || Number.isNaN(amountInPaise) || amountInPaise < 100 || checkoutCurrency !== 'INR') {
+                throw new Error('Invalid payment configuration. Please refresh and try again.');
+            }
+
+            console.log('Razorpay options:', {
+                key: checkoutKey,
+                amount: amountInPaise,
+                currency: checkoutCurrency,
+                order_id: checkoutOrderId,
+                upiFlow,
+                method: options.method,
+                prefill: options.prefill
+            });
+
+            const paymentObject = new window.Razorpay(options);
+            paymentObject.on('payment.failed', (failedResponse) => {
+                console.error('Razorpay payment failed:', failedResponse);
+                setError(
+                    failedResponse?.error?.description ||
+                    'Payment failed. Please try again.'
+                );
+                setFormData(prev => ({
+                    ...prev,
+                    paymentDetails: {
+                        ...prev.paymentDetails,
+                        paymentStatus: 'Failed'
+                    }
+                }));
+            });
+            paymentObject.open();
+        } catch (paymentError) {
+            setError(paymentError.response?.data?.message || paymentError.message || 'Failed to initiate payment.');
+        } finally {
+            setIsPaying(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
+
+        if (formData.paymentDetails.paymentStatus !== 'Completed') {
+            setError('Please complete the fee payment before submitting your application.');
+            return;
+        }
+
         setSubmitting(true);
         setError(null);
 
@@ -174,10 +399,6 @@ export default function ApplicationForm() {
             submitData.append('publications', JSON.stringify(formData.publications));
             submitData.append('paymentDetails', JSON.stringify(formData.paymentDetails));
             submitData.append('declarationAccepted', formData.declarationAccepted);
-
-            if (transactionSlip) {
-                submitData.append('transactionSlip', transactionSlip);
-            }
 
             await api.post('/applications', submitData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -519,45 +740,76 @@ export default function ApplicationForm() {
         <div className="wizard-step-card animate-fade-in">
             <div style={{ marginBottom: '20px' }}>
                 <h3>Application Fee Details</h3>
-                <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Submit your application fee through <a href="#" style={{ color: '#4f46e5', textDecoration: 'underline' }}>SB Collect</a>.</p>
+                <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                    Fee will be processed securely via Razorpay (UPI, cards, net banking, wallets).
+                </p>
             </div>
             
             <div className="form-grid">
                 <div className="form-group">
                     <label>Category *</label>
-                    <select value={formData.paymentDetails.category} onChange={(e) => handleNestedChange('paymentDetails', 'category', e.target.value)} required>
+                    <select value={formData.paymentDetails.category} onChange={(e) => handleCategoryChange(e.target.value)} required>
                         <option value="">Select Category</option>
-                        <option value="GEN/OBC">GEN/OBC</option>
-                        <option value="SC/ST/PWD/Women">SC/ST/PWD/Women</option>
+                        {feeCategories.map((category) => (
+                            <option key={category} value={category}>{category}</option>
+                        ))}
                     </select>
                 </div>
                 <div className="form-group">
                     <label>Amount *</label>
-                    <select value={formData.paymentDetails.amount} onChange={(e) => handleNestedChange('paymentDetails', 'amount', Number(e.target.value))} required>
-                        <option value="">Select Amount</option>
-                        <option value="500">₹ 500</option>
-                        <option value="250">₹ 250</option>
-                    </select>
+                    <input
+                        type="text"
+                        value={formData.paymentDetails.amount ? `₹ ${formData.paymentDetails.amount}` : ''}
+                        placeholder="Auto-calculated from category"
+                        disabled
+                        className="disabled-input"
+                    />
                 </div>
                 <div className="form-group">
-                    <label>Transaction ID *</label>
-                    <input type="text" value={formData.paymentDetails.transactionId} onChange={(e) => handleNestedChange('paymentDetails', 'transactionId', e.target.value)} required placeholder="e.g. 12312412411413" />
+                    <label>Transaction ID</label>
+                    <input
+                        type="text"
+                        value={formData.paymentDetails.transactionId}
+                        disabled
+                        className="disabled-input"
+                        placeholder="Auto-generated after payment"
+                    />
                 </div>
                 <div className="form-group">
-                    <label>Bank *</label>
-                    <input type="text" value={formData.paymentDetails.bank} onChange={(e) => handleNestedChange('paymentDetails', 'bank', e.target.value)} required />
+                    <label>Bank / Gateway</label>
+                    <input type="text" value="Razorpay" disabled className="disabled-input" />
                 </div>
-                
+
                 <div className="form-group">
-                    <label>Transaction Slip *</label>
-                    <input type="file" onChange={(e) => setTransactionSlip(e.target.files[0])} required={!transactionSlip} style={{ border: '1px solid #d1d5db', padding: '10px', borderRadius: '4px', backgroundColor: '#f9fafb' }} />
-                    <small style={{ color: '#94a3b8', display: 'block', marginTop: '4px' }}>Max: 2MB. Allow: .pdf, .jpg, .jpeg</small>
-                </div>
-                <div className="form-group">
-                    <label>Date of Transaction *</label>
-                    <input type="date" value={formData.paymentDetails.paymentDate} onChange={(e) => handleNestedChange('paymentDetails', 'paymentDate', e.target.value)} required />
+                    <label>Payment Status</label>
+                    <input
+                        type="text"
+                        value={formData.paymentDetails.paymentStatus}
+                        disabled
+                        className="disabled-input"
+                    />
                 </div>
             </div>
+
+            <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handlePayNow}
+                    disabled={isPaying || !formData.paymentDetails.category}
+                >
+                    {isPaying ? 'Starting Payment...' : 'Pay Now'}
+                </button>
+                {paymentMessage && (
+                    <span style={{ color: '#065f46', fontWeight: 600 }}>{paymentMessage}</span>
+                )}
+            </div>
+
+            {formData.paymentDetails.paymentStatus === 'Completed' && (
+                <div style={{ marginTop: '16px', backgroundColor: '#ecfdf5', border: '1px solid #10b981', borderRadius: '8px', padding: '12px', color: '#065f46' }}>
+                    Payment verified successfully. You can proceed to declaration.
+                </div>
+            )}
         </div>
     );
 
@@ -605,10 +857,11 @@ export default function ApplicationForm() {
                 <h4>Fee Details</h4>
                 <div className="review-grid">
                     <div><strong>Amount:</strong> ₹{formData.paymentDetails.amount}</div>
-                    <div><strong>Transaction ID:</strong> {formData.paymentDetails.transactionId}</div>
-                    <div><strong>Bank:</strong> {formData.paymentDetails.bank}</div>
+                    <div><strong>Transaction ID:</strong> {formData.paymentDetails.razorpayPaymentId || formData.paymentDetails.transactionId}</div>
+                    <div><strong>Gateway:</strong> {formData.paymentDetails.bank}</div>
+                    <div><strong>Order ID:</strong> {formData.paymentDetails.razorpayOrderId || 'N/A'}</div>
+                    <div><strong>Status:</strong> {formData.paymentDetails.paymentStatus}</div>
                     <div><strong>Date:</strong> {formData.paymentDetails.paymentDate}</div>
-                    <div><strong>Slip Uploaded:</strong> {transactionSlip ? 'Yes' : 'No'}</div>
                 </div>
             </div>
 
@@ -682,7 +935,15 @@ export default function ApplicationForm() {
                                 <Link to="/student" className="btn-secondary" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center', boxSizing: 'border-box' }}>Cancel</Link>
                             )}
                             
-                            <button type="submit" className="btn-primary" disabled={submitting || (currentStep === 4 && !formData.declarationAccepted)}>
+                            <button
+                                type="submit"
+                                className="btn-primary"
+                                disabled={
+                                    submitting ||
+                                    (currentStep === 3 && formData.paymentDetails.paymentStatus !== 'Completed') ||
+                                    (currentStep === 4 && !formData.declarationAccepted)
+                                }
+                            >
                                 {submitting ? 'Submitting...' : currentStep === steps.length - 1 ? 'Submit Final Application' : 'Save & Next'}
                             </button>
                         </div>
