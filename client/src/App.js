@@ -31,8 +31,6 @@ import Admissions from './pages/Admin/Admissions';
 import AuditResults from './pages/Admin/AuditResults';
 import Templates from './pages/Admin/Templates';
 import Faculties from './pages/Admin/Faculties';
-import SendMail from './pages/Admin/SendMail';
-import AdminProfile from './pages/Admin/Profile';
 // Faculty Pages
 import FacultyLayout from './modules/faculty/components/FacultyLayout';
 import FacultyDashboard from './modules/faculty/pages/FacultyDashboard';
@@ -97,9 +95,9 @@ export default function App() {
               <Route path="admissions" element={<Admissions />} />
               <Route path="audit" element={<AuditResults />} />
               <Route path="faculties" element={<Faculties />} />
-              <Route path="send-mail" element={<SendMail />} />
+              <Route path="send-mail" element={<div>Send Mail</div>} />
               <Route path="templates" element={<Templates />} />
-              <Route path="profile" element={<AdminProfile />} />
+              <Route path="profile" element={<Profile />} />
               <Route path="how-to-use" element={<div>How to Use</div>} />
               <Route path="archive" element={<div>Archive</div>} />
             </Route>

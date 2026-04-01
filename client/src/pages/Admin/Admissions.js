@@ -11,11 +11,9 @@ import {
   MdVisibility,
   MdCalendarToday,
   MdPeople,
-  MdMoreVert,
-  MdCloudDownload
+  MdMoreVert
 } from 'react-icons/md';
 import api from '../../services/apiCore';
-import { toast } from 'react-toastify';
 
 export default function Admissions() {
   const [view, setView] = useState('list'); // 'list' or 'details'
@@ -40,36 +38,10 @@ export default function Admissions() {
     admissionCycleId: ''
   });
 
-  const [exportingCsv, setExportingCsv] = useState(false);
-
   useEffect(() => {
     fetchCycles();
     fetchOfferings();
   }, []);
-
-  const handleExportShortlisted = async () => {
-    try {
-      setExportingCsv(true);
-      const res = await api.get('/applications/export-shortlisted', { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `shortlisted_candidates_${Date.now()}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success('Shortlisted candidates exported successfully!');
-    } catch (err) {
-      if (err.response?.status === 404) {
-        toast.info('No shortlisted candidates found to export.');
-      } else {
-        toast.error('Failed to export. Please try again.');
-      }
-    } finally {
-      setExportingCsv(false);
-    }
-  };
 
   const fetchCycles = async () => {
     try {
@@ -165,17 +137,8 @@ export default function Admissions() {
       {view === 'list' ? (
         <>
           {/* List View */}
-          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="section-header">
             <h3 className="section-title">Current Admission Cycles</h3>
-            <button
-              className="btn-primary"
-              onClick={handleExportShortlisted}
-              disabled={exportingCsv}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#059669', whiteSpace: 'nowrap' }}
-            >
-              <MdCloudDownload size={18} />
-              {exportingCsv ? 'Exporting...' : 'Export Shortlisted CSV'}
-            </button>
           </div>
 
           <div className="admissions-grid">
